@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { CreateSubmissionDto } from './dto/submission.dto';
+import { CreateIntakeDto } from './dto/submission.dto';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class SubmissionsService {
   private readonly logger = new Logger(SubmissionsService.name);
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async create(dto: CreateSubmissionDto) {
+  async create(dto: CreateIntakeDto) {
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase

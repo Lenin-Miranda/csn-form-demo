@@ -3,12 +3,11 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  IsUUID,
   MaxLength,
   Matches,
 } from 'class-validator';
 
-export class CreateIntakeDto {
+export class CreateStudentDto {
   @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
@@ -27,22 +26,6 @@ export class CreateIntakeDto {
     message: 'phone must be a valid phone number',
   })
   phone!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  program!: string;
 }
 
-export class CreateSubmissionDto {
-  @Transform(({ value }) => value?.trim())
-  @IsUUID()
-  studentId!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  program!: string;
-}
+export { CreateStudentDto as CreateStudentsDto };

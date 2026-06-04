@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SubmissionsModule } from './submissions/submissions.module';
+import { StudentsModule } from './students/students.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), SupabaseModule, SubmissionsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), SupabaseModule, SubmissionsModule, StudentsModule],
   controllers: [AppController],
   providers: [AppService],
 })
