@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SubmissionsService } from './submissions.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { StudentsService } from '../students/students.service';
 
 describe('SubmissionsService', () => {
   let service: SubmissionsService;
@@ -13,6 +14,12 @@ describe('SubmissionsService', () => {
           provide: SupabaseService,
           useValue: {
             getClient: jest.fn(),
+          },
+        },
+        {
+          provide: StudentsService,
+          useValue: {
+            findOrCreate: jest.fn(),
           },
         },
       ],

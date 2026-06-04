@@ -5,21 +5,30 @@ import {
 } from '@nestjs/common';
 import { CreateIntakeDto } from './dto/submission.dto';
 import { SupabaseService } from '../supabase/supabase.service';
+import { StudentsService } from '../students/students.service';
 
 @Injectable()
 export class SubmissionsService {
   private readonly logger = new Logger(SubmissionsService.name);
-  constructor(private readonly supabaseService: SupabaseService) {}
+
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly studentsService: StudentsService,
+  ) {}
 
   async create(dto: CreateIntakeDto) {
+    const student = await this.studentsService.findOrCreate({
+      name: dto.name,
+      email: dto.email,
+      phone: dto.phone,
+    });
+
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase
       .from('submissions')
       .insert({
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
+        student_id: student.id,
         program: dto.program,
       })
       .select()

@@ -15,7 +15,7 @@ export class CreateIntakeDto {
   @MaxLength(100)
   name!: string;
 
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => value?.trim().toLowerCase())
   @IsEmail()
   @IsNotEmpty()
   email!: string;
