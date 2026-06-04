@@ -80,7 +80,7 @@ export default function IntakeForm() {
             <div>
               <h3 className="text-xl font-semibold text-csn-navy">All done!</h3>
               <p className="mt-1.5 text-sm text-slate-500">
-                Thank you{values.name ? `, ${values.name.split(' ')[0]}` : ''}. We'll be in touch shortly.
+                Thank you{values.name ? `, ${values.name.split(' ')[0]}` : ''}. We&apos;ll be in touch shortly.
               </p>
             </div>
           </div>
