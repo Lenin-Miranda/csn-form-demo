@@ -12,11 +12,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* CSN Brand Colors — separate block to emit as CSS custom properties */
+@theme {
+  --color-csn-navy:      #003087;
+  --color-csn-navy-dark: #001f5b;
+  --color-csn-navy-mid:  #003da5;
+  --color-csn-gold:      #ffb81c;
+  --color-csn-gold-dark: #d49b10;
 }
 
 body {
