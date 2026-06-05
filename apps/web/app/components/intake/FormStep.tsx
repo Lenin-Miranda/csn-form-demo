@@ -1,6 +1,12 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
+import { useLanguage } from '@/app/context/language'
+
+interface Option {
+  value: string
+  label: string
+}
 
 interface Props {
   stepNumber: number
@@ -10,8 +16,11 @@ interface Props {
   value: string
   onChange: (value: string) => void
   onNext: () => void | Promise<void>
+  onBack: () => void
+  isFirst: boolean
   isLast: boolean
   isSubmitting?: boolean
+  options?: readonly Option[]
 }
 
 export default function FormStep({
@@ -22,8 +31,11 @@ export default function FormStep({
   value,
   onChange,
   onNext,
+  onBack,
+  isFirst,
   isLast,
   isSubmitting = false,
+  options,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -32,59 +44,88 @@ export default function FormStep({
     return () => clearTimeout(timer)
   }, [question])
 
+  const { t } = useLanguage()
+
   return (
-    <div className="space-y-7">
-      <div className="space-y-1.5">
-        <span className="block text-xs font-bold tracking-[0.18em] uppercase text-csn-gold">
-          Question {stepNumber}
-        </span>
-        <h2 className="text-[1.6rem] font-semibold leading-snug text-csn-navy">
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <div className="flex items-center gap-4 text-sm font-semibold" style={{ color: 'var(--accent-start)' }}>
+          <span>{String(stepNumber).padStart(2, '0')}</span>
+          <span className="h-px flex-1 bg-slate-400/20" />
+          <span className="text-cyan-200">{t('required')}</span>
+        </div>
+        <h2 className="text-5xl font-extrabold leading-tight tracking-tight" style={{ color: 'var(--fg)' }}>
           {question}
         </h2>
+        <p className="max-w-2xl text-base leading-7 text-slate-300">
+          {placeholder}
+        </p>
       </div>
 
-      <input
-        ref={inputRef}
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' && value.trim() && !isSubmitting) {
-            void onNext()
-          }
-        }}
-        placeholder={placeholder}
-        autoComplete="off"
-        className="w-full border-b-2 border-slate-200 bg-transparent pb-3 pt-1 text-lg text-csn-navy placeholder:text-slate-300 outline-none focus:border-csn-gold transition-colors duration-200"
-      />
-
-      <button
-        onClick={() => {
-          void onNext()
-        }}
-        disabled={!value.trim() || isSubmitting}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
-      >
-        {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
-        {!isLast && (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-            className="opacity-60"
-          >
-            <path
-              d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+      <div>
+        {options?.length ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {options.map((option) => {
+              const selected = value === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onChange(option.value)}
+                  className={`rounded-3xl border px-4 py-4 text-left text-sm font-semibold transition ${selected ? 'border-cyan-300 bg-cyan-400/15 text-white shadow-lg shadow-cyan-500/10' : 'border-white/10 bg-white/5 text-slate-200 hover:border-cyan-300/40'}`}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <input
+            ref={inputRef}
+            type={type}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && value.trim() && !isSubmitting) {
+                void onNext()
+              }
+            }}
+            placeholder={placeholder}
+            autoComplete="off"
+            className="w-full rounded-[30px] border border-white/10 bg-white/5 px-6 py-4 text-lg text-white placeholder:text-slate-400 outline-none shadow-inner shadow-black/20 transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+          />
         )}
-      </button>
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => {
+            void onBack()
+          }}
+          disabled={isFirst || isSubmitting}
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-300/40 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {t('back')}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            void onNext()
+          }}
+          disabled={!value.trim() || isSubmitting}
+          className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-slate-950 shadow-[0_20px_60px_rgba(14,165,233,0.18)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={t('continue')}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 }

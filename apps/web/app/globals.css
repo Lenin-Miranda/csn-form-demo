@@ -1,28 +1,78 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #031b2e;
+  --fg: #eef2ff;
+  --muted: #94a3b8;
+  --surface: rgba(15, 23, 42, 0.76);
+  --shade: rgba(148, 163, 184, 0.18);
+
+  /* Celeste blue gradient */
+  --accent-start: #7dd3fc;
+  --accent-end: #06b6d4;
+  --accent-solid: #38bdf8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-/* CSN Brand Colors — separate block to emit as CSS custom properties */
-@theme {
-  --color-csn-navy:      #003087;
-  --color-csn-navy-dark: #001f5b;
-  --color-csn-navy-mid:  #003da5;
-  --color-csn-gold:      #ffb81c;
-  --color-csn-gold-dark: #d49b10;
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 20%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent 20%),
+    linear-gradient(180deg, #041b2f 0%, #021223 100%);
+  color: var(--fg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* Minimal input / button defaults to streamline components */
+input,
+textarea,
+select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--shade);
+  padding: 0.5rem 0;
+  outline: none;
+  color: var(--fg);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+textarea:focus {
+  border-bottom-color: var(--accent-start);
+  box-shadow: 0 1px 0 rgba(14, 165, 233, 0.06);
+}
+
+button.minimal {
+  background: transparent;
+  border: 1px solid var(--shade);
+  color: var(--fg);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+button.minimal.primary {
+  background-image: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.12);
+}
+
+.card-clean {
+  background: var(--surface);
+  box-shadow: none;
+  padding: 1rem;
+  border-radius: 12px;
 }

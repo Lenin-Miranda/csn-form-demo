@@ -14,7 +14,7 @@ export class SubmissionsService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly studentsService: StudentsService,
-  ) {}
+  ) { }
 
   async create(dto: CreateIntakeDto) {
     const student = await this.studentsService.findOrCreate({
@@ -30,6 +30,20 @@ export class SubmissionsService {
       .insert({
         student_id: student.id,
         program: dto.program,
+        availability: dto.availability,
+        location: dto.location,
+        csn_before: dto.csnBefore,
+        ged_hiset: dto.gedHiset,
+        heard_about: dto.heardAbout,
+        transportation: dto.transportation,
+        level: dto.level,
+        improve: dto.improve,
+        studied_before: dto.studiedBefore,
+        passed_subjects: dto.passedSubjects,
+        support_subject: dto.supportSubject,
+        area: dto.area,
+        prior_experience: dto.priorExperience,
+        work_authorization: dto.workAuthorization,
       })
       .select()
       .single();

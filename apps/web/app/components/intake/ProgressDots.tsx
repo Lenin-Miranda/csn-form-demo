@@ -1,3 +1,5 @@
+import { useLanguage } from '@/app/context/language'
+
 interface Props {
   total: number
   current: number
@@ -5,23 +7,25 @@ interface Props {
 }
 
 export default function ProgressDots({ total, current, done }: Props) {
+  const { t } = useLanguage()
+  const percent = done ? 100 : ((current + 1) / total) * 100
+
   return (
-    <div className="flex items-center gap-2">
-      {Array.from({ length: total }).map((_, i) => (
+    <div className="space-y-3">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
         <div
-          key={i}
-          className={`h-1 rounded-full transition-all duration-300 ease-out ${
-            done || i < current
-              ? 'w-5 bg-csn-gold'
-              : i === current
-              ? 'w-8 bg-csn-gold'
-              : 'w-5 bg-slate-200'
-          }`}
+          className="h-full rounded-full"
+          style={{
+            width: `${percent}%`,
+            backgroundImage: 'linear-gradient(90deg, var(--accent-start), var(--accent-end))',
+          }}
         />
-      ))}
-      <span className="ml-2 text-xs tabular-nums text-slate-400" style={{ color: '#94a3b8' }}>
-        {done ? total : current + 1} / {total}
-      </span>
+      </div>
+      <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-300">
+        <span>{t('progress')}</span>
+        <span>{done ? total : current + 1} / {total}</span>
+      </div>
     </div>
   )
 }
+
