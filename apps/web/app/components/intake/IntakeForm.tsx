@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import FormStep from './FormStep'
 import ProgressDots from './ProgressDots'
@@ -59,13 +59,16 @@ export default function IntakeForm() {
       ) : null}
 
       <div
-        className={`transition-all duration-[260ms] ease-in-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1.5'
-          }`}
+        className={`transition-all duration-[260ms] ease-in-out ${
+          visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1.5'
+        }`}
       >
         {done ? (
           <div className="py-6 text-center space-y-3 card-clean">
             <div>
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>{t('allDone')}</h3>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>
+                {t('allDone')}
+              </h3>
               <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
                 {t('thankYou')}
               </p>
@@ -78,7 +81,7 @@ export default function IntakeForm() {
             placeholder={placeholder}
             type={current.type}
             value={values[current.id]}
-            onChange={val => setValue(current.id, val)}
+            onChange={(val) => setValue(current.id, val)}
             onNext={advance}
             onBack={goBack}
             options={options}
