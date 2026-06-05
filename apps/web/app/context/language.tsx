@@ -109,6 +109,7 @@ const TRANSLATIONS = {
         continue: 'Continue',
         allDone: 'All done',
         thankYou: "Thank you. We'll be in touch shortly.",
+        startAgain: 'Start again',
     },
     Español: {
         language: 'Idioma',
@@ -120,6 +121,7 @@ const TRANSLATIONS = {
         continue: 'Continuar',
         allDone: 'Todo listo',
         thankYou: 'Gracias. Nos pondremos en contacto pronto.',
+        startAgain: 'Volver a comenzar',
     },
     Français: {
         language: 'Langue',
@@ -131,6 +133,7 @@ const TRANSLATIONS = {
         continue: 'Continuer',
         allDone: 'Terminé',
         thankYou: 'Merci. Nous vous contacterons bientôt.',
+        startAgain: 'Recommencer',
     },
 } as const
 

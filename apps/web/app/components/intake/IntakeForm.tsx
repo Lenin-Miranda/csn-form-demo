@@ -2,6 +2,7 @@
 
 import FormStep from './FormStep'
 import ProgressDots from './ProgressDots'
+import Confetti from './Confetti'
 import { OPTION_LABELS, useLanguage } from '@/app/context/language'
 import { useSubmission } from '@/app/context/submission'
 
@@ -13,6 +14,7 @@ export default function IntakeForm() {
     error,
     goBack,
     isSubmitting,
+    reset,
     setValue,
     step,
     steps,
@@ -29,7 +31,8 @@ export default function IntakeForm() {
   })) : undefined
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto">
+    <div className="relative space-y-8 max-w-2xl mx-auto">
+      <Confetti active={done} />
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -63,13 +66,20 @@ export default function IntakeForm() {
           }`}
       >
         {done ? (
-          <div className="py-6 text-center space-y-3 card-clean">
+          <div className="relative py-6 text-center space-y-6 card-clean">
             <div>
               <h3 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>{t('allDone')}</h3>
               <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
                 {t('thankYou')}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="mx-auto inline-flex items-center justify-center rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            >
+              {t('startAgain') ?? 'Start again'}
+            </button>
           </div>
         ) : (
           <FormStep

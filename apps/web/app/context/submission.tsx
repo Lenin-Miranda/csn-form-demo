@@ -195,11 +195,12 @@ const BASE_STEPS = [
       Français: "Avez-vous déjà été étudiant de CSN?",
     },
     placeholder: {
-      English: "Approximate date or No",
-      Español: "Fecha aproximada o No",
-      Français: "Date approximative ou Non",
+      English: "Yes / No",
+      Español: "Sí / No",
+      Français: "Oui / Non",
     },
     type: "text",
+    options: ["Yes", "No"] as const,
   },
   {
     id: "gedHiset",
