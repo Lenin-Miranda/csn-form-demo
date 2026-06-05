@@ -1,59 +1,32 @@
 'use client'
 
-import { useState } from 'react'
 import FormStep from './FormStep'
 import ProgressDots from './ProgressDots'
-
-const STEPS = [
-  {
-    id: 'name',
-    question: 'What is your full name?',
-    placeholder: 'Jane Smith',
-    type: 'text',
-  },
-  {
-    id: 'email',
-    question: 'What is your email address?',
-    placeholder: 'jane@example.com',
-    type: 'email',
-  },
-  {
-    id: 'phone',
-    question: 'What is your phone number?',
-    placeholder: '(702) 555-0000',
-    type: 'tel',
-  },
-  {
-    id: 'program',
-    question: 'Which program interests you?',
-    placeholder: 'e.g. Computer Science, Nursing...',
-    type: 'text',
-  },
-] as const
+import { useSubmission } from '@/app/context/submission'
 
 export default function IntakeForm() {
-  const [step, setStep] = useState(0)
-  const [values, setValues] = useState<Record<string, string>>({})
-  const [visible, setVisible] = useState(true)
-  const [done, setDone] = useState(false)
-
-  const advance = () => {
-    setVisible(false)
-    setTimeout(() => {
-      if (step === STEPS.length - 1) {
-        setDone(true)
-      } else {
-        setStep(s => s + 1)
-      }
-      setVisible(true)
-    }, 260)
-  }
-
-  const current = STEPS[step]
+  const {
+    advance,
+    current,
+    done,
+    error,
+    isSubmitting,
+    setValue,
+    step,
+    steps,
+    values,
+    visible,
+  } = useSubmission()
 
   return (
     <div className="space-y-8">
-      <ProgressDots total={STEPS.length} current={step} done={done} />
+      <ProgressDots total={steps.length} current={step} done={done} />
+
+      {error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      ) : null}
 
       <div
         className={`transition-all duration-[260ms] ease-in-out ${
@@ -90,10 +63,11 @@ export default function IntakeForm() {
             question={current.question}
             placeholder={current.placeholder}
             type={current.type}
-            value={values[current.id] ?? ''}
-            onChange={val => setValues(v => ({ ...v, [current.id]: val }))}
+            value={values[current.id]}
+            onChange={val => setValue(current.id, val)}
             onNext={advance}
-            isLast={step === STEPS.length - 1}
+            isLast={step === steps.length - 1}
+            isSubmitting={isSubmitting}
           />
         )}
       </div>

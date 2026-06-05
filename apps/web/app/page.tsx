@@ -1,4 +1,5 @@
 import IntakeForm from './components/intake/IntakeForm'
+import { SubmissionProvider } from './context/submission'
 
 export default function Home() {
   return (
@@ -16,7 +17,9 @@ export default function Home() {
       <div className="w-full max-w-md">
         {/* text-csn-navy resets the inherited dark-mode foreground color inside the white card */}
         <div className="bg-white text-csn-navy rounded-2xl px-10 py-12 shadow-2xl ring-1 ring-black/5">
-          <IntakeForm />
+          <SubmissionProvider>
+            <IntakeForm />
+          </SubmissionProvider>
         </div>
       </div>
 

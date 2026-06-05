@@ -9,8 +9,9 @@ interface Props {
   type: string
   value: string
   onChange: (value: string) => void
-  onNext: () => void
+  onNext: () => void | Promise<void>
   isLast: boolean
+  isSubmitting?: boolean
 }
 
 export default function FormStep({
@@ -22,6 +23,7 @@ export default function FormStep({
   onChange,
   onNext,
   isLast,
+  isSubmitting = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -47,7 +49,9 @@ export default function FormStep({
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => {
-          if (e.key === 'Enter' && value.trim()) onNext()
+          if (e.key === 'Enter' && value.trim() && !isSubmitting) {
+            void onNext()
+          }
         }}
         placeholder={placeholder}
         autoComplete="off"
@@ -55,11 +59,13 @@ export default function FormStep({
       />
 
       <button
-        onClick={onNext}
-        disabled={!value.trim()}
+        onClick={() => {
+          void onNext()
+        }}
+        disabled={!value.trim() || isSubmitting}
         className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
       >
-        {isLast ? 'Submit' : 'Continue'}
+        {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
         {!isLast && (
           <svg
             width="14"
