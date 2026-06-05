@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import FormStep from './FormStep'
-import ProgressDots from './ProgressDots'
-import { useSubmission } from '@/app/context/submission'
+import FormStep from "./FormStep";
+import ProgressDots from "./ProgressDots";
+import { useSubmission } from "@/app/context/submission";
 
 export default function IntakeForm() {
   const {
@@ -16,7 +16,7 @@ export default function IntakeForm() {
     steps,
     values,
     visible,
-  } = useSubmission()
+  } = useSubmission();
 
   return (
     <div className="space-y-8">
@@ -29,8 +29,8 @@ export default function IntakeForm() {
       ) : null}
 
       <div
-        className={`transition-all duration-[260ms] ease-in-out ${
-          visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1.5'
+        className={`transition-all duration-260 ease-in-out ${
+          visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
         }`}
       >
         {done ? (
@@ -53,7 +53,8 @@ export default function IntakeForm() {
             <div>
               <h3 className="text-xl font-semibold text-csn-navy">All done!</h3>
               <p className="mt-1.5 text-sm text-slate-500">
-                Thank you{values.name ? `, ${values.name.split(' ')[0]}` : ''}. We&apos;ll be in touch shortly.
+                Thank you{values.name ? `, ${values.name.split(" ")[0]}` : ""}.
+                We&apos;ll be in touch shortly.
               </p>
             </div>
           </div>
@@ -64,7 +65,7 @@ export default function IntakeForm() {
             placeholder={current.placeholder}
             type={current.type}
             value={values[current.id]}
-            onChange={val => setValue(current.id, val)}
+            onChange={(val) => setValue(current.id, val)}
             onNext={advance}
             isLast={step === steps.length - 1}
             isSubmitting={isSubmitting}
@@ -72,5 +73,5 @@ export default function IntakeForm() {
         )}
       </div>
     </div>
-  )
+  );
 }
