@@ -2,7 +2,6 @@ import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUUID,
   MaxLength,
@@ -34,76 +33,6 @@ export class CreateIntakeDto {
   @IsNotEmpty()
   @MaxLength(120)
   program!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  availability!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  location!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  csnBefore!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  gedHiset!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  heardAbout!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @IsNotEmpty()
-  transportation!: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  level?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  improve?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  studiedBefore?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  passedSubjects?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  supportSubject?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  area?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  priorExperience?: string;
-
-  @Transform(({ value }) => value?.trim())
-  @IsOptional()
-  @IsString()
-  workAuthorization?: string;
 }
 
 export class CreateSubmissionDto {

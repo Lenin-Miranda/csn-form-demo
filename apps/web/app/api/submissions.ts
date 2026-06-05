@@ -8,20 +8,6 @@ export interface CreateSubmissionPayload {
   email: string
   phone: string
   program: string
-  availability: string
-  location: string
-  csnBefore: string
-  gedHiset: string
-  heardAbout: string
-  transportation: string
-  level?: string
-  improve?: string
-  studiedBefore?: string
-  passedSubjects?: string
-  supportSubject?: string
-  area?: string
-  priorExperience?: string
-  workAuthorization?: string
 }
 
 export async function createSubmission(payload: CreateSubmissionPayload) {
