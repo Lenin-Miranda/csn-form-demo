@@ -6,20 +6,21 @@ import {
   MaxLength,
   Matches,
 } from 'class-validator';
+import { trimAndLowercaseString, trimString } from '../../common/transformers';
 
 export class CreateStudentDto {
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name!: string;
 
-  @Transform(({ value }) => value?.trim().toLowerCase())
+  @Transform(trimAndLowercaseString)
   @IsEmail()
   @IsNotEmpty()
   email!: string;
 
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @Matches(/^[0-9()+\-\s]{7,20}$/, {

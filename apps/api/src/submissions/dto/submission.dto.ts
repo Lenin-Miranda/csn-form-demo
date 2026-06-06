@@ -7,20 +7,21 @@ import {
   MaxLength,
   Matches,
 } from 'class-validator';
+import { trimAndLowercaseString, trimString } from '../../common/transformers';
 
 export class CreateIntakeDto {
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name!: string;
 
-  @Transform(({ value }) => value?.trim().toLowerCase())
+  @Transform(trimAndLowercaseString)
   @IsEmail()
   @IsNotEmpty()
   email!: string;
 
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @Matches(/^[0-9()+\-\s]{7,20}$/, {
@@ -28,7 +29,7 @@ export class CreateIntakeDto {
   })
   phone!: string;
 
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
@@ -36,11 +37,11 @@ export class CreateIntakeDto {
 }
 
 export class CreateSubmissionDto {
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsUUID()
   studentId!: string;
 
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
