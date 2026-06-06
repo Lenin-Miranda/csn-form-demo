@@ -1,20 +1,23 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { IntakeQuestionType } from '@/app/api/intake'
 
 interface Props {
   stepNumber: number
   question: string
+  fieldKey: string
   placeholder: string
   type: IntakeQuestionType
   options: string[]
   value: string
   onChange: (value: string) => void
   onNext: () => void | Promise<void>
+  onSkip: () => void | Promise<void>
   isLast: boolean
   isSubmitting?: boolean
   canContinue: boolean
+  canSkip: boolean
   isRequired: boolean
 }
 
@@ -24,18 +27,26 @@ const fieldClassName =
 export default function FormStep({
   stepNumber,
   question,
+  fieldKey,
   placeholder,
   type,
   options,
   value,
   onChange,
   onNext,
+  onSkip,
   isLast,
   isSubmitting = false,
   canContinue,
+  canSkip,
   isRequired,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null)
+  const [dateInputType, setDateInputType] = useState<'date' | 'text'>(
+    type === 'date' && !value ? 'text' : 'date',
+  )
+  const isBirthDate = fieldKey === 'date_of_birth'
+  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     if (type === 'boolean') {
@@ -45,6 +56,14 @@ export default function FormStep({
     const timer = window.setTimeout(() => inputRef.current?.focus(), 60)
     return () => window.clearTimeout(timer)
   }, [question, type])
+
+  useEffect(() => {
+    if (type !== 'date') {
+      return
+    }
+
+    setDateInputType(value ? 'date' : 'text')
+  }, [type, value, question])
 
   const handleEnter = () => {
     if (canContinue && !isSubmitting) {
@@ -137,6 +156,37 @@ export default function FormStep({
       )
     }
 
+    if (type === 'date') {
+      return (
+        <input
+          ref={(element) => {
+            inputRef.current = element
+          }}
+          type={dateInputType}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setDateInputType('date')}
+          onBlur={(event) => {
+            if (!event.target.value) {
+              setDateInputType('text')
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleEnter()
+            }
+          }}
+          placeholder={
+            placeholder || (isBirthDate ? 'MM/DD/YYYY' : 'Select a date')
+          }
+          max={isBirthDate ? today : undefined}
+          min={!isBirthDate && fieldKey === 'preferred_start_date' ? today : undefined}
+          autoComplete={isBirthDate ? 'bday' : 'off'}
+          className={fieldClassName}
+        />
+      )
+    }
+
     return (
       <input
         ref={(element) => {
@@ -151,6 +201,7 @@ export default function FormStep({
           }
         }}
         placeholder={placeholder}
+        inputMode={type === 'number' ? 'numeric' : undefined}
         autoComplete="off"
         className={fieldClassName}
       />
@@ -173,33 +224,48 @@ export default function FormStep({
 
       {renderField()}
 
-      <button
-        onClick={() => {
-          void onNext()
-        }}
-        disabled={!canContinue || isSubmitting}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
-      >
-        {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
-        {!isLast && (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
-            className="opacity-60"
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => {
+            void onNext()
+          }}
+          disabled={!canContinue || isSubmitting}
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
+          {!isLast && (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+              className="opacity-60"
+            >
+              <path
+                d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
+
+        {canSkip && (
+          <button
+            type="button"
+            onClick={() => {
+              void onSkip()
+            }}
+            disabled={isSubmitting}
+            className="text-sm font-semibold text-slate-400 transition-colors duration-150 hover:text-csn-navy disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <path
-              d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+            Skip
+          </button>
         )}
-      </button>
+      </div>
     </div>
   )
 }

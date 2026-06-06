@@ -21,8 +21,10 @@ interface SubmissionContextValue {
   isSubmitting: boolean;
   error: string | null;
   canAdvance: boolean;
+  canSkip: boolean;
   setValue: (field: string, value: string) => void;
   advance: () => void;
+  skip: () => void;
   reset: () => void;
 }
 
@@ -60,10 +62,6 @@ function hasAnswerValue(question: IntakeQuestion | null, value: string) {
     return false;
   }
 
-  if (!question.isRequired) {
-    return true;
-  }
-
   if (question.type === "boolean") {
     return value === "true" || value === "false";
   }
@@ -84,6 +82,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
   const steps = form?.questions ?? [];
   const current = steps[step] ?? null;
   const canAdvance = hasAnswerValue(current, current ? values[current.fieldKey] ?? "" : "");
+  const canSkip = Boolean(current && !current.isRequired);
 
   useEffect(() => {
     let isMounted = true;
@@ -174,17 +173,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const advance = () => {
-    if (!current || isLoading || isSubmitting) {
-      return;
-    }
-
-    if (!canAdvance) {
-      setError(`Please answer "${current.label}" before continuing.`);
-      return;
-    }
-
-    setError(null);
+  const moveForward = () => {
     setVisible(false);
 
     window.setTimeout(() => {
@@ -196,6 +185,33 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
       setStep((currentStep) => currentStep + 1);
       setVisible(true);
     }, 260);
+  };
+
+  const advance = () => {
+    if (!current || isLoading || isSubmitting) {
+      return;
+    }
+
+    if (!canAdvance) {
+      setError(`Please answer "${current.label}" before continuing.`);
+      return;
+    }
+
+    setError(null);
+    moveForward();
+  };
+
+  const skip = () => {
+    if (!current || current.isRequired || isLoading || isSubmitting) {
+      return;
+    }
+
+    setValues((currentValues) => ({
+      ...currentValues,
+      [current.fieldKey]: "",
+    }));
+    setError(null);
+    moveForward();
   };
 
   return (
@@ -212,8 +228,10 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
         isSubmitting,
         error,
         canAdvance,
+        canSkip,
         setValue,
         advance,
+        skip,
         reset,
       }}
     >

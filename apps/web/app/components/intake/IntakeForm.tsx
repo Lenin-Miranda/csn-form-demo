@@ -8,6 +8,7 @@ export default function IntakeForm() {
   const {
     advance,
     canAdvance,
+    canSkip,
     current,
     done,
     error,
@@ -15,6 +16,7 @@ export default function IntakeForm() {
     isLoading,
     isSubmitting,
     setValue,
+    skip,
     step,
     steps,
     values,
@@ -79,15 +81,18 @@ export default function IntakeForm() {
           <FormStep
             stepNumber={step + 1}
             question={current.label}
+            fieldKey={current.fieldKey}
             placeholder={current.placeholder ?? ""}
             type={current.type}
             options={current.options ?? []}
             value={values[current.fieldKey] ?? ""}
             onChange={(val) => setValue(current.fieldKey, val)}
             onNext={advance}
+            onSkip={skip}
             isLast={step === steps.length - 1}
             isSubmitting={isSubmitting}
             canContinue={canAdvance}
+            canSkip={canSkip}
             isRequired={current.isRequired}
           />
         )}
