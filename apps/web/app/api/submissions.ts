@@ -3,11 +3,18 @@ import { api } from './axios'
 
 const logger = createLogger('SubmissionsApi')
 
+export interface CreateSubmissionAnswerPayload {
+  questionId: string
+  value: string
+}
+
 export interface CreateSubmissionPayload {
+  formSlug?: string
   name: string
   email: string
   phone: string
   program: string
+  answers: CreateSubmissionAnswerPayload[]
 }
 
 export async function createSubmission(payload: CreateSubmissionPayload) {

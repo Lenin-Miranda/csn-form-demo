@@ -22,6 +22,7 @@ export const INTAKE_QUESTION_TYPES = [
   'select',
   'number',
   'date',
+  'boolean',
 ] as const;
 
 export type IntakeQuestionType = (typeof INTAKE_QUESTION_TYPES)[number];

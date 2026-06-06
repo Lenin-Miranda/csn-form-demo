@@ -1,15 +1,40 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMinSize,
+  IsArray,
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUUID,
   MaxLength,
   Matches,
+  ValidateNested,
 } from 'class-validator';
 import { trimAndLowercaseString, trimString } from '../../common/transformers';
 
+export class CreateSubmissionAnswerDto {
+  @Transform(trimString)
+  @IsUUID()
+  questionId!: string;
+
+  @Transform(({ value }) =>
+    value === null || value === undefined ? '' : String(value).trim(),
+  )
+  @IsString()
+  value!: string;
+}
+
 export class CreateIntakeDto {
+  @Transform(trimString)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'formSlug must be kebab-case',
+  })
+  formSlug?: string;
+
   @Transform(trimString)
   @IsString()
   @IsNotEmpty()
@@ -34,6 +59,12 @@ export class CreateIntakeDto {
   @IsNotEmpty()
   @MaxLength(120)
   program!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateSubmissionAnswerDto)
+  answers!: CreateSubmissionAnswerDto[];
 }
 
 export class CreateSubmissionDto {

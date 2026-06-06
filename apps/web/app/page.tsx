@@ -9,9 +9,11 @@ export default function Home() {
           College of Southern Nevada
         </p>
         <h1 className="text-white text-3xl font-bold tracking-tight">
-          Student Intake
+          English Language Intake
         </h1>
-        <p className="mt-2 text-white/40 text-sm">Let&apos;s get to know you</p>
+        <p className="mt-2 text-white/40 text-sm">
+          Let&apos;s learn about your English study goals
+        </p>
       </header>
 
       <div className="w-full max-w-md">
@@ -24,7 +26,7 @@ export default function Home() {
       </div>
 
       <footer className="mt-12">
-        <p className="text-white/20 text-xs">© 2025 College of Southern Nevada</p>
+        <p className="text-white/20 text-xs">© 2026 College of Southern Nevada</p>
       </footer>
     </div>
   )

@@ -1,57 +1,27 @@
 "use client";
 
 import { AxiosError } from "axios";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { fetchIntake, type IntakeFormResponse, type IntakeQuestion } from "../api/intake";
 import { createSubmission } from "../api/submissions";
 
-const STEPS = [
-  {
-    id: "name",
-    question: "What is your full name?",
-    placeholder: "Jane Smith",
-    type: "text",
-  },
-  {
-    id: "email",
-    question: "What is your email address?",
-    placeholder: "jane@example.com",
-    type: "email",
-  },
-  {
-    id: "phone",
-    question: "What is your phone number?",
-    placeholder: "(702) 555-0000",
-    type: "tel",
-  },
-  {
-    id: "program",
-    question: "Which program interests you?",
-    placeholder: "e.g. Computer Science, Nursing...",
-    type: "text",
-  },
-] as const;
+const REQUIRED_SUBMISSION_FIELDS = ["name", "email", "phone", "program"] as const;
 
-const INITIAL_VALUES = {
-  name: "",
-  email: "",
-  phone: "",
-  program: "",
-};
-
-type SubmissionValues = typeof INITIAL_VALUES;
-type SubmissionField = keyof SubmissionValues;
-type SubmissionStep = (typeof STEPS)[number];
+type SubmissionValues = Record<string, string>;
 
 interface SubmissionContextValue {
-  steps: readonly SubmissionStep[];
+  form: IntakeFormResponse | null;
+  steps: IntakeQuestion[];
   step: number;
-  current: SubmissionStep;
+  current: IntakeQuestion | null;
   values: SubmissionValues;
   visible: boolean;
   done: boolean;
+  isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
-  setValue: (field: SubmissionField, value: string) => void;
+  canAdvance: boolean;
+  setValue: (field: string, value: string) => void;
   advance: () => void;
   reset: () => void;
 }
@@ -78,23 +48,89 @@ function getErrorMessage(error: unknown) {
   return "Something went wrong. Please try again.";
 }
 
+function buildInitialValues(questions: IntakeQuestion[]) {
+  return questions.reduce<SubmissionValues>((accumulator, question) => {
+    accumulator[question.fieldKey] = "";
+    return accumulator;
+  }, {});
+}
+
+function hasAnswerValue(question: IntakeQuestion | null, value: string) {
+  if (!question) {
+    return false;
+  }
+
+  if (!question.isRequired) {
+    return true;
+  }
+
+  if (question.type === "boolean") {
+    return value === "true" || value === "false";
+  }
+
+  return value.trim().length > 0;
+}
+
 export function SubmissionProvider({ children }: { children: ReactNode }) {
+  const [form, setForm] = useState<IntakeFormResponse | null>(null);
   const [step, setStep] = useState(0);
-  const [values, setValues] = useState(INITIAL_VALUES);
+  const [values, setValues] = useState<SubmissionValues>({});
   const [visible, setVisible] = useState(true);
   const [done, setDone] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const current = STEPS[step];
+  const steps = form?.questions ?? [];
+  const current = steps[step] ?? null;
+  const canAdvance = hasAnswerValue(current, current ? values[current.fieldKey] ?? "" : "");
 
-  const setValue = (field: SubmissionField, value: string) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadForm() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const intakeForm = await fetchIntake();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setForm(intakeForm);
+        setValues(buildInitialValues(intakeForm.questions));
+        setStep(0);
+        setDone(false);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(getErrorMessage(loadError));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setVisible(true);
+        }
+      }
+    }
+
+    void loadForm();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const setValue = (field: string, value: string) => {
     setValues((currentValues) => ({ ...currentValues, [field]: value }));
   };
 
   const reset = () => {
     setStep(0);
-    setValues(INITIAL_VALUES);
+    setValues(buildInitialValues(steps));
     setVisible(true);
     setDone(false);
     setIsSubmitting(false);
@@ -102,11 +138,33 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
   };
 
   const submit = async () => {
+    if (!form) {
+      setError("Could not load the intake form.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await createSubmission(values);
+      for (const field of REQUIRED_SUBMISSION_FIELDS) {
+        if (!values[field]?.trim()) {
+          throw new Error(`Please complete the ${field.replace("_", " ")} field.`);
+        }
+      }
+
+      await createSubmission({
+        formSlug: form.slug,
+        name: values.name.trim(),
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+        program: values.program.trim(),
+        answers: steps.map((question) => ({
+          questionId: question.questionId,
+          value: (values[question.fieldKey] ?? "").trim(),
+        })),
+      });
+
       setDone(true);
     } catch (submitError) {
       setError(getErrorMessage(submitError));
@@ -117,11 +175,20 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
   };
 
   const advance = () => {
+    if (!current || isLoading || isSubmitting) {
+      return;
+    }
+
+    if (!canAdvance) {
+      setError(`Please answer "${current.label}" before continuing.`);
+      return;
+    }
+
     setError(null);
     setVisible(false);
 
     window.setTimeout(() => {
-      if (step === STEPS.length - 1) {
+      if (step === steps.length - 1) {
         void submit();
         return;
       }
@@ -134,14 +201,17 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
   return (
     <SubmissionContext.Provider
       value={{
-        steps: STEPS,
+        form,
+        steps,
         step,
         current,
         values,
         visible,
         done,
+        isLoading,
         isSubmitting,
         error,
+        canAdvance,
         setValue,
         advance,
         reset,
