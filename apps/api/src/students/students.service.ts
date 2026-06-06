@@ -89,14 +89,19 @@ export class StudentsService {
   }
 
   async findOrCreate(dto: CreateStudentDto): Promise<StudentRow> {
-    const existingStudent = await this.findByEmail(dto.email);
-
-    if (existingStudent) {
-      this.logger.log(`Reusing existing student with id: ${existingStudent.id}`);
-      return existingStudent;
-    }
-
     try {
+      const existingStudent = await this.findByEmail(dto.email);
+
+      if (existingStudent) {
+        this.logger.log(
+          `Reusing existing student with id: ${existingStudent.id}`,
+        );
+        return existingStudent;
+      }
+
+      this.logger.log(
+        `No student found for email: ${dto.email}; creating a new record`,
+      );
       return await this.create(dto);
     } catch (e) {
       if (e instanceof ConflictException) {
@@ -104,11 +109,48 @@ export class StudentsService {
           `Student already exists after create attempt for email: ${dto.email}; reloading record`,
         );
 
-        const student = await this.findByEmail(dto.email);
-        if (student) return student;
+        try {
+          const student = await this.findByEmail(dto.email);
+
+          if (!student) {
+            throw new InternalServerErrorException(
+              'Could not find student after conflict',
+            );
+          }
+
+          this.logger.log(
+            `Recovered existing student with id: ${student.id} after conflict`,
+          );
+          return student;
+        } catch (reloadError) {
+          this.logger.error(
+            `Failed to reload student after conflict for email: ${dto.email}`,
+            reloadError instanceof Error ? reloadError.stack : undefined,
+          );
+
+          if (reloadError instanceof InternalServerErrorException) {
+            throw reloadError;
+          }
+
+          throw new InternalServerErrorException(
+            'Could not find or create student',
+          );
+        }
       }
 
-      throw e;
+      if (e instanceof InternalServerErrorException) {
+        this.logger.error(
+          `findOrCreate failed for email: ${dto.email}`,
+          e.stack,
+        );
+        throw e;
+      }
+
+      this.logger.error(
+        `Unexpected error while finding or creating student for email: ${dto.email}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      throw new InternalServerErrorException('Could not find or create student');
     }
   }
 }
