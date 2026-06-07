@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { IntakeQuestionType } from '@/app/api/intake'
+import { getUiCopy, type DisplayOption, type Locale } from '@/app/lib/i18n'
 
 interface Props {
+  locale: Locale
   stepNumber: number
   question: string
   fieldKey: string
   placeholder: string
   type: IntakeQuestionType
-  options: string[]
+  options: DisplayOption[]
   value: string
   onChange: (value: string) => void
   onBack: () => void | Promise<void>
@@ -98,6 +100,7 @@ function parseDateInputValue(
 }
 
 export default function FormStep({
+  locale,
   stepNumber,
   question,
   fieldKey,
@@ -123,6 +126,7 @@ export default function FormStep({
     type === 'date' ? formatDateDisplayValue(value) : '',
   )
   const today = new Date().toISOString().split('T')[0]
+  const copy = getUiCopy(locale)
 
   useEffect(() => {
     if (type === 'boolean') {
@@ -151,10 +155,7 @@ export default function FormStep({
     if (type === 'boolean') {
       return (
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Yes', value: 'true' },
-            { label: 'No', value: 'false' },
-          ].map((option) => {
+          {copy.booleanOptions.map((option) => {
             const selected = value === option.value
 
             return (
@@ -194,9 +195,13 @@ export default function FormStep({
             rows={5}
             className="min-h-44 w-full resize-none bg-transparent px-5 py-4 text-lg leading-8 text-csn-navy placeholder:text-slate-400 outline-none"
           />
-          <div className="flex items-center justify-between border-t border-slate-200/80 px-5 py-3 text-xs font-medium text-slate-400">
-            <span>Share your goals, plans, or timeline.</span>
-            <span>{value.length > 0 ? `${value.length} characters` : 'A few sentences is enough'}</span>
+          <div className="flex flex-col gap-1 border-t border-slate-200/80 px-5 py-3 text-xs font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+            <span>{copy.textareaSupportText}</span>
+            <span className="sm:text-right">
+              {value.length > 0
+                ? copy.textareaCharacterCount(value.length)
+                : copy.textareaEmptyHint}
+            </span>
           </div>
         </div>
       )
@@ -213,10 +218,10 @@ export default function FormStep({
             onChange={(event) => onChange(event.target.value)}
             className={`${fieldClassName} appearance-none pr-10`}
           >
-            <option value="">{placeholder || 'Select an option'}</option>
+            <option value="">{placeholder || copy.selectPlaceholder}</option>
             {options.map((option) => (
-              <option key={option} value={option}>
-                {option}
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
@@ -262,7 +267,7 @@ export default function FormStep({
               handleEnter()
             }
           }}
-          placeholder={placeholder || 'MM/DD/YYYY'}
+          placeholder={placeholder || copy.datePlaceholder}
           inputMode="numeric"
           maxLength={10}
           autoComplete={isBirthDate ? 'bday' : 'off'}
@@ -296,14 +301,12 @@ export default function FormStep({
     <div className="space-y-7">
       <div className="space-y-1.5">
         <span className="block text-xs font-bold tracking-[0.18em] uppercase text-csn-gold">
-          Question {stepNumber}
+          {copy.questionLabel(stepNumber)}
         </span>
         <h2 className="text-[1.6rem] font-semibold leading-snug text-csn-navy">
           {question}
         </h2>
-        {!isRequired && (
-          <p className="text-sm text-slate-400">Optional</p>
-        )}
+        {!isRequired && <p className="text-sm text-slate-400">{copy.optional}</p>}
       </div>
 
       {renderField()}
@@ -335,7 +338,7 @@ export default function FormStep({
                   strokeLinejoin="round"
                 />
               </svg>
-              Back
+              {copy.back}
             </button>
           )}
         </div>
@@ -348,7 +351,11 @@ export default function FormStep({
             disabled={!canContinue || isSubmitting}
             className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
+            {isLast
+              ? isSubmitting
+                ? copy.submitting
+                : copy.submit
+              : copy.continue}
             {!isLast && (
               <svg
                 width="14"
@@ -378,7 +385,7 @@ export default function FormStep({
               disabled={isSubmitting}
               className="text-sm font-semibold text-slate-400 transition-colors duration-150 hover:text-csn-navy disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Skip
+              {copy.skip}
             </button>
           )}
         </div>

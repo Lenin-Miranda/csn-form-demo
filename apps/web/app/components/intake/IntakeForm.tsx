@@ -3,8 +3,14 @@
 import FormStep from "./FormStep";
 import ProgressDots from "./ProgressDots";
 import { useSubmission } from "@/app/context/submission";
+import {
+  getUiCopy,
+  localizeFormContent,
+  localizeQuestion,
+  type Locale,
+} from "@/app/lib/i18n";
 
-export default function IntakeForm() {
+export default function IntakeForm({ locale }: { locale: Locale }) {
   const {
     back,
     advance,
@@ -24,6 +30,10 @@ export default function IntakeForm() {
     values,
     visible,
   } = useSubmission();
+  const copy = getUiCopy(locale);
+  const localizedForm = localizeFormContent(form, locale);
+  const localizedCurrent = current ? localizeQuestion(current, locale) : null;
+  const firstName = values.name ? values.name.split(" ")[0] : undefined;
 
   return (
     <div className="space-y-8">
@@ -43,7 +53,7 @@ export default function IntakeForm() {
         {isLoading ? (
           <div className="py-6 text-center space-y-3">
             <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-csn-gold" />
-            <p className="text-sm text-slate-500">Loading your intake questions...</p>
+            <p className="text-sm text-slate-500">{copy.loadingQuestions}</p>
           </div>
         ) : done ? (
           <div className="py-6 text-center space-y-4">
@@ -63,30 +73,26 @@ export default function IntakeForm() {
               </svg>
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-csn-navy">All done!</h3>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Thank you{values.name ? `, ${values.name.split(" ")[0]}` : ""}.
-                We&apos;ll be in touch shortly about your English studies at CSN.
-              </p>
+              <h3 className="text-xl font-semibold text-csn-navy">{copy.allDoneTitle}</h3>
+              <p className="mt-1.5 text-sm text-slate-500">{copy.allDoneMessage(firstName)}</p>
             </div>
           </div>
         ) : !current ? (
           <div className="py-6 text-center space-y-3">
-            <h3 className="text-xl font-semibold text-csn-navy">
-              No intake questions available
-            </h3>
+            <h3 className="text-xl font-semibold text-csn-navy">{copy.noQuestionsTitle}</h3>
             <p className="text-sm text-slate-500">
-              {form?.description ?? "Please try again in a moment."}
+              {localizedForm?.description ?? copy.noQuestionsFallback}
             </p>
           </div>
         ) : (
           <FormStep
             stepNumber={step + 1}
-            question={current.label}
+            locale={locale}
+            question={localizedCurrent?.label ?? current.label}
             fieldKey={current.fieldKey}
-            placeholder={current.placeholder ?? ""}
+            placeholder={localizedCurrent?.placeholder ?? current.placeholder ?? ""}
             type={current.type}
-            options={current.options ?? []}
+            options={localizedCurrent?.options ?? []}
             value={values[current.fieldKey] ?? ""}
             onChange={(val) => setValue(current.fieldKey, val)}
             onBack={back}

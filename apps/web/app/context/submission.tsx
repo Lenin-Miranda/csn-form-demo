@@ -4,6 +4,13 @@ import { AxiosError } from "axios";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { fetchIntake, type IntakeFormResponse, type IntakeQuestion } from "../api/intake";
 import { createSubmission } from "../api/submissions";
+import {
+  getLocalizedQuestionLabel,
+  getUiCopy,
+  localizeQuestion,
+  translateErrorMessage,
+  type Locale,
+} from "@/app/lib/i18n";
 
 const REQUIRED_SUBMISSION_FIELDS = ["name", "email", "phone", "program"] as const;
 
@@ -32,24 +39,28 @@ interface SubmissionContextValue {
 
 const SubmissionContext = createContext<SubmissionContextValue | null>(null);
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, locale: Locale) {
   if (error instanceof AxiosError) {
     const message = error.response?.data?.message;
 
     if (Array.isArray(message)) {
-      return message.join(", ");
+      return message
+        .map((entry) =>
+          typeof entry === "string" ? translateErrorMessage(entry, locale) : String(entry),
+        )
+        .join(", ");
     }
 
     if (typeof message === "string") {
-      return message;
+      return translateErrorMessage(message, locale);
     }
   }
 
   if (error instanceof Error) {
-    return error.message;
+    return translateErrorMessage(error.message, locale);
   }
 
-  return "Something went wrong. Please try again.";
+  return getUiCopy(locale).genericError;
 }
 
 function buildInitialValues(questions: IntakeQuestion[]) {
@@ -71,7 +82,13 @@ function hasAnswerValue(question: IntakeQuestion | null, value: string) {
   return value.trim().length > 0;
 }
 
-export function SubmissionProvider({ children }: { children: ReactNode }) {
+export function SubmissionProvider({
+  children,
+  locale,
+}: {
+  children: ReactNode;
+  locale: Locale;
+}) {
   const [form, setForm] = useState<IntakeFormResponse | null>(null);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<SubmissionValues>({});
@@ -80,6 +97,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const copy = getUiCopy(locale);
 
   const steps = form?.questions ?? [];
   const current = steps[step] ?? null;
@@ -110,7 +128,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setError(getErrorMessage(loadError));
+        setError(getErrorMessage(loadError, locale));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -141,7 +159,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!form) {
-      setError("Could not load the intake form.");
+      setError(copy.loadFormError);
       return;
     }
 
@@ -151,7 +169,9 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
     try {
       for (const field of REQUIRED_SUBMISSION_FIELDS) {
         if (!values[field]?.trim()) {
-          throw new Error(`Please complete the ${field.replace("_", " ")} field.`);
+          throw new Error(
+            copy.completeQuestionError(getLocalizedQuestionLabel(field, locale, field)),
+          );
         }
       }
 
@@ -169,7 +189,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
 
       setDone(true);
     } catch (submitError) {
-      setError(getErrorMessage(submitError));
+      setError(getErrorMessage(submitError, locale));
     } finally {
       setIsSubmitting(false);
       setVisible(true);
@@ -196,7 +216,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
     }
 
     if (!canAdvance) {
-      setError(`Please answer "${current.label}" before continuing.`);
+      setError(copy.answerBeforeContinueError(localizeQuestion(current, locale).label));
       return;
     }
 
