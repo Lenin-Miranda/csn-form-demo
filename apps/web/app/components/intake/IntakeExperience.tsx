@@ -29,25 +29,27 @@ function IntakeExperienceContent() {
 
   return (
     <div className="min-h-screen bg-csn-navy px-6 py-16">
-      <div className="mx-auto flex w-full max-w-md flex-col">
+      <div className="mx-auto flex w-full max-w-5xl flex-col">
         <div className="mb-6 flex justify-end">
           <LanguageToggle />
         </div>
 
-        <header className="mb-12 text-center">
+        <header className="mx-auto mb-12 max-w-3xl text-center">
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-csn-gold">
             {copy.collegeName}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl">
             {copy.pageTitle}
           </h1>
           <p className="mt-2 text-sm text-white/40">{copy.pageSubtitle}</p>
         </header>
 
-        <div className="bg-white text-csn-navy rounded-2xl px-10 py-12 shadow-2xl ring-1 ring-black/5">
-          <SubmissionProvider locale={locale}>
-            <IntakeForm locale={locale} />
-          </SubmissionProvider>
+        <div className="mx-auto w-full max-w-md">
+          <div className="bg-white text-csn-navy rounded-2xl px-10 py-12 shadow-2xl ring-1 ring-black/5">
+            <SubmissionProvider locale={locale}>
+              <IntakeForm locale={locale} />
+            </SubmissionProvider>
+          </div>
         </div>
 
         <footer className="mt-12 text-center">
