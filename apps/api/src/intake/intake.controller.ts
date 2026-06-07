@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { CreateIntakeQuestionDto } from './dto/intake.dto';
 import { IntakeService } from './intake.service';
 
@@ -14,6 +14,22 @@ export class IntakeController {
   @Get(':formSlug/questions')
   findQuestions(@Param('formSlug') formSlug: string) {
     return this.intakeService.findQuestions(formSlug);
+  }
+
+  @Get(':formSlug/questions/:questionId/previous')
+  findPreviousQuestion(
+    @Param('formSlug') formSlug: string,
+    @Param('questionId', new ParseUUIDPipe()) questionId: string,
+  ) {
+    return this.intakeService.findPreviousQuestion(questionId, formSlug);
+  }
+
+  @Get(':formSlug/questions/:questionId/next')
+  findNextQuestion(
+    @Param('formSlug') formSlug: string,
+    @Param('questionId', new ParseUUIDPipe()) questionId: string,
+  ) {
+    return this.intakeService.findNextQuestion(questionId, formSlug);
   }
 
   @Post('questions')

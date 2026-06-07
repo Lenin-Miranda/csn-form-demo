@@ -51,3 +51,34 @@ export async function fetchIntake(formSlug?: string) {
     throw error
   }
 }
+
+export async function fetchPreviousIntakeQuestion(
+  formSlug: string,
+  questionId: string,
+) {
+  const path = `/intake/${formSlug}/questions/${questionId}/previous`
+
+  logger.log('Loading previous intake question', { formSlug, questionId })
+
+  try {
+    const response = await api.get<IntakeQuestion | null>(path)
+    return response.data
+  } catch (error) {
+    logger.error('Failed to load previous intake question', error)
+    throw error
+  }
+}
+
+export async function fetchNextIntakeQuestion(formSlug: string, questionId: string) {
+  const path = `/intake/${formSlug}/questions/${questionId}/next`
+
+  logger.log('Loading next intake question', { formSlug, questionId })
+
+  try {
+    const response = await api.get<IntakeQuestion | null>(path)
+    return response.data
+  } catch (error) {
+    logger.error('Failed to load next intake question', error)
+    throw error
+  }
+}

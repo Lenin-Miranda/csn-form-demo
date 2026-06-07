@@ -6,7 +6,9 @@ import { useSubmission } from "@/app/context/submission";
 
 export default function IntakeForm() {
   const {
+    back,
     advance,
+    canGoBack,
     canAdvance,
     canSkip,
     current,
@@ -87,10 +89,12 @@ export default function IntakeForm() {
             options={current.options ?? []}
             value={values[current.fieldKey] ?? ""}
             onChange={(val) => setValue(current.fieldKey, val)}
+            onBack={back}
             onNext={advance}
             onSkip={skip}
             isLast={step === steps.length - 1}
             isSubmitting={isSubmitting}
+            canGoBack={canGoBack}
             canContinue={canAdvance}
             canSkip={canSkip}
             isRequired={current.isRequired}

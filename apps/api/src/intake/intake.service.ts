@@ -10,6 +10,10 @@ import { CreateIntakeQuestionDto } from './dto/intake.dto';
 import { SupabaseService } from '../supabase/supabase.service';
 
 const DEFAULT_INTAKE_FORM_SLUG = 'student-intake';
+const QUESTION_SELECT_FIELDS =
+  'id, field_key, label, type, placeholder, is_required, position, options, created_at';
+
+type QuestionDirection = 'previous' | 'next';
 
 interface IntakeFormRow {
   id: string;
@@ -66,9 +70,7 @@ export class IntakeService {
 
     const result = await supabase
       .from('intake_questions')
-      .select(
-        'id, field_key, label, type, placeholder, is_required, position, options, created_at',
-      )
+      .select(QUESTION_SELECT_FIELDS)
       .eq('form_id', form.id)
       .order('position', { ascending: true });
     const data = (result.data ?? []) as IntakeQuestionRow[];
@@ -112,9 +114,7 @@ export class IntakeService {
         position,
         options: dto.options ?? null,
       })
-      .select(
-        'id, field_key, label, type, placeholder, is_required, position, options, created_at',
-      )
+      .select(QUESTION_SELECT_FIELDS)
       .single();
     const data = result.data;
     const error = result.error;
@@ -140,6 +140,20 @@ export class IntakeService {
 
     this.logger.log(`Question created with id: ${question.questionId}`);
     return question;
+  }
+
+  async findPreviousQuestion(
+    questionId: string,
+    formSlug = DEFAULT_INTAKE_FORM_SLUG,
+  ): Promise<IntakeQuestionResponse | null> {
+    return this.findAdjacentQuestion(questionId, 'previous', formSlug);
+  }
+
+  async findNextQuestion(
+    questionId: string,
+    formSlug = DEFAULT_INTAKE_FORM_SLUG,
+  ): Promise<IntakeQuestionResponse | null> {
+    return this.findAdjacentQuestion(questionId, 'next', formSlug);
   }
 
   private async findFormBySlug(
@@ -194,6 +208,81 @@ export class IntakeService {
       typeof data?.position === 'number' ? data.position : 0;
 
     return currentPosition + 1;
+  }
+
+  private async findAdjacentQuestion(
+    questionId: string,
+    direction: QuestionDirection,
+    formSlug: string,
+  ): Promise<IntakeQuestionResponse | null> {
+    const supabase = this.supabaseService.getClient();
+    const form = await this.findFormBySlug(supabase, formSlug);
+    const currentQuestion = await this.findQuestionById(
+      supabase,
+      form.id,
+      questionId,
+    );
+
+    const query = supabase
+      .from('intake_questions')
+      .select(QUESTION_SELECT_FIELDS)
+      .eq('form_id', form.id);
+
+    const result =
+      direction === 'previous'
+        ? await query
+            .lt('position', currentQuestion.position)
+            .order('position', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : await query
+            .gt('position', currentQuestion.position)
+            .order('position', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+    const data = result.data as IntakeQuestionRow | null;
+    const error = result.error;
+
+    if (error) {
+      this.logger.error(
+        `Failed to load ${direction} intake question for question: ${questionId}`,
+        error.message,
+      );
+      throw new InternalServerErrorException(
+        `Could not load ${direction} intake question`,
+      );
+    }
+
+    return data ? this.mapQuestion(data) : null;
+  }
+
+  private async findQuestionById(
+    supabase: SupabaseClient,
+    formId: string,
+    questionId: string,
+  ): Promise<IntakeQuestionRow> {
+    const result = await supabase
+      .from('intake_questions')
+      .select(QUESTION_SELECT_FIELDS)
+      .eq('form_id', formId)
+      .eq('id', questionId)
+      .maybeSingle();
+    const data = result.data as IntakeQuestionRow | null;
+    const error = result.error;
+
+    if (error) {
+      this.logger.error(
+        `Failed to look up intake question: ${questionId}`,
+        error.message,
+      );
+      throw new InternalServerErrorException('Could not look up intake question');
+    }
+
+    if (!data) {
+      throw new NotFoundException('Intake question not found');
+    }
+
+    return data;
   }
 
   private mapQuestion(question: IntakeQuestionRow): IntakeQuestionResponse {

@@ -20,9 +20,11 @@ interface SubmissionContextValue {
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
+  canGoBack: boolean;
   canAdvance: boolean;
   canSkip: boolean;
   setValue: (field: string, value: string) => void;
+  back: () => void;
   advance: () => void;
   skip: () => void;
   reset: () => void;
@@ -81,6 +83,7 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
 
   const steps = form?.questions ?? [];
   const current = steps[step] ?? null;
+  const canGoBack = step > 0;
   const canAdvance = hasAnswerValue(current, current ? values[current.fieldKey] ?? "" : "");
   const canSkip = Boolean(current && !current.isRequired);
 
@@ -201,6 +204,20 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
     moveForward();
   };
 
+  const back = () => {
+    if (!canGoBack || isLoading || isSubmitting) {
+      return;
+    }
+
+    setError(null);
+    setVisible(false);
+
+    window.setTimeout(() => {
+      setStep((currentStep) => Math.max(0, currentStep - 1));
+      setVisible(true);
+    }, 260);
+  };
+
   const skip = () => {
     if (!current || current.isRequired || isLoading || isSubmitting) {
       return;
@@ -227,9 +244,11 @@ export function SubmissionProvider({ children }: { children: ReactNode }) {
         isLoading,
         isSubmitting,
         error,
+        canGoBack,
         canAdvance,
         canSkip,
         setValue,
+        back,
         advance,
         skip,
         reset,

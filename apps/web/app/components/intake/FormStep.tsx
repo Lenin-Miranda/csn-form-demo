@@ -12,10 +12,12 @@ interface Props {
   options: string[]
   value: string
   onChange: (value: string) => void
+  onBack: () => void | Promise<void>
   onNext: () => void | Promise<void>
   onSkip: () => void | Promise<void>
   isLast: boolean
   isSubmitting?: boolean
+  canGoBack: boolean
   canContinue: boolean
   canSkip: boolean
   isRequired: boolean
@@ -33,10 +35,12 @@ export default function FormStep({
   options,
   value,
   onChange,
+  onBack,
   onNext,
   onSkip,
   isLast,
   isSubmitting = false,
+  canGoBack,
   canContinue,
   canSkip,
   isRequired,
@@ -224,47 +228,80 @@ export default function FormStep({
 
       {renderField()}
 
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => {
-            void onNext()
-          }}
-          disabled={!canContinue || isSubmitting}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
-          {!isLast && (
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              aria-hidden="true"
-              className="opacity-60"
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={() => {
+                void onBack()
+              }}
+              disabled={isSubmitting}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-500 transition-all duration-150 hover:border-slate-300 hover:text-csn-navy active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <path
-                d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                aria-hidden="true"
+                className="opacity-70"
+              >
+                <path
+                  d="M11 7H3M6.5 10.5 3 7l3.5-3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Back
+            </button>
           )}
-        </button>
+        </div>
 
-        {canSkip && (
+        <div className="flex items-center gap-4">
           <button
-            type="button"
             onClick={() => {
-              void onSkip()
+              void onNext()
             }}
-            disabled={isSubmitting}
-            className="text-sm font-semibold text-slate-400 transition-colors duration-150 hover:text-csn-navy disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!canContinue || isSubmitting}
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-csn-gold px-7 text-sm font-bold text-csn-navy transition-all duration-150 hover:bg-csn-gold-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            Skip
+            {isLast ? (isSubmitting ? 'Submitting...' : 'Submit') : 'Continue'}
+            {!isLast && (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                aria-hidden="true"
+                className="opacity-60"
+              >
+                <path
+                  d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
           </button>
-        )}
+
+          {canSkip && (
+            <button
+              type="button"
+              onClick={() => {
+                void onSkip()
+              }}
+              disabled={isSubmitting}
+              className="text-sm font-semibold text-slate-400 transition-colors duration-150 hover:text-csn-navy disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Skip
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
