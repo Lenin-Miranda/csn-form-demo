@@ -26,6 +26,77 @@ interface Props {
 const fieldClassName =
   'w-full border-b-2 border-slate-200 bg-transparent pb-3 pt-1 text-lg text-csn-navy placeholder:text-slate-300 outline-none transition-colors duration-200 focus:border-csn-gold'
 
+function formatDateDisplayValue(value: string) {
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+
+  if (!isoMatch) {
+    return value
+  }
+
+  const [, year, month, day] = isoMatch
+  return `${month}/${day}/${year}`
+}
+
+function maskDateDisplayValue(value: string) {
+  const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  const digits = isoMatch
+    ? `${isoMatch[2].padStart(2, '0')}${isoMatch[3].padStart(2, '0')}${isoMatch[1]}`
+    : value.replace(/\D/g, '').slice(0, 8)
+
+  if (digits.length <= 2) {
+    return digits
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  }
+
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+function parseDateInputValue(
+  value: string,
+  {
+    minDate,
+    maxDate,
+  }: {
+    minDate?: string
+    maxDate?: string
+  },
+) {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+
+  if (!match) {
+    return ''
+  }
+
+  const [, month, day, year] = match
+  const monthNumber = Number(month)
+  const dayNumber = Number(day)
+  const yearNumber = Number(year)
+  const candidate = new Date(Date.UTC(yearNumber, monthNumber - 1, dayNumber))
+
+  if (
+    candidate.getUTCFullYear() !== yearNumber ||
+    candidate.getUTCMonth() !== monthNumber - 1 ||
+    candidate.getUTCDate() !== dayNumber
+  ) {
+    return ''
+  }
+
+  const isoValue = `${year}-${month}-${day}`
+
+  if (minDate && isoValue < minDate) {
+    return ''
+  }
+
+  if (maxDate && isoValue > maxDate) {
+    return ''
+  }
+
+  return isoValue
+}
+
 export default function FormStep({
   stepNumber,
   question,
@@ -46,10 +117,11 @@ export default function FormStep({
   isRequired,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(null)
-  const [dateInputType, setDateInputType] = useState<'date' | 'text'>(
-    type === 'date' && !value ? 'text' : 'date',
-  )
   const isBirthDate = fieldKey === 'date_of_birth'
+  const isPreferredStartDate = fieldKey === 'preferred_start_date'
+  const [dateDisplayValue, setDateDisplayValue] = useState(() =>
+    type === 'date' ? formatDateDisplayValue(value) : '',
+  )
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
@@ -66,8 +138,8 @@ export default function FormStep({
       return
     }
 
-    setDateInputType(value ? 'date' : 'text')
-  }, [type, value, question])
+    setDateDisplayValue(formatDateDisplayValue(value))
+  }, [fieldKey, question, type])
 
   const handleEnter = () => {
     if (canContinue && !isSubmitting) {
@@ -106,21 +178,27 @@ export default function FormStep({
 
     if (type === 'textarea') {
       return (
-        <textarea
-          ref={(element) => {
-            inputRef.current = element
-          }}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-              handleEnter()
-            }
-          }}
-          placeholder={placeholder}
-          rows={4}
-          className={`${fieldClassName} min-h-32 resize-none`}
-        />
+        <div className="overflow-hidden rounded-[1.75rem] border border-slate-200/90 bg-[linear-gradient(180deg,rgba(244,247,252,0.92)_0%,rgba(255,255,255,1)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.96)] transition-all duration-200 focus-within:border-csn-gold/70 focus-within:shadow-[0_0_0_4px_rgba(255,184,28,0.14)]">
+          <textarea
+            ref={(element) => {
+              inputRef.current = element
+            }}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                handleEnter()
+              }
+            }}
+            placeholder={placeholder}
+            rows={5}
+            className="min-h-44 w-full resize-none bg-transparent px-5 py-4 text-lg leading-8 text-csn-navy placeholder:text-slate-400 outline-none"
+          />
+          <div className="flex items-center justify-between border-t border-slate-200/80 px-5 py-3 text-xs font-medium text-slate-400">
+            <span>Share your goals, plans, or timeline.</span>
+            <span>{value.length > 0 ? `${value.length} characters` : 'A few sentences is enough'}</span>
+          </div>
+        </div>
       )
     }
 
@@ -166,25 +244,27 @@ export default function FormStep({
           ref={(element) => {
             inputRef.current = element
           }}
-          type={dateInputType}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={() => setDateInputType('date')}
-          onBlur={(event) => {
-            if (!event.target.value) {
-              setDateInputType('text')
-            }
+          type="text"
+          value={dateDisplayValue}
+          onChange={(event) => {
+            const maskedValue = maskDateDisplayValue(event.target.value)
+
+            setDateDisplayValue(maskedValue)
+            onChange(
+              parseDateInputValue(maskedValue, {
+                minDate: isPreferredStartDate ? today : undefined,
+                maxDate: isBirthDate ? today : undefined,
+              }),
+            )
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               handleEnter()
             }
           }}
-          placeholder={
-            placeholder || (isBirthDate ? 'MM/DD/YYYY' : 'Select a date')
-          }
-          max={isBirthDate ? today : undefined}
-          min={!isBirthDate && fieldKey === 'preferred_start_date' ? today : undefined}
+          placeholder={placeholder || 'MM/DD/YYYY'}
+          inputMode="numeric"
+          maxLength={10}
           autoComplete={isBirthDate ? 'bday' : 'off'}
           className={fieldClassName}
         />
