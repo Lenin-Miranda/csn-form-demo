@@ -8,9 +8,10 @@ import {
   EnqueueSubmissionConfirmationPayload,
 } from './email-jobs.service';
 import { SupabaseService } from '../supabase/supabase.service';
-
-const EMAIL_JOBS_TABLE = 'email_jobs';
-const SUBMISSION_CONFIRMATION_TEMPLATE = 'submission_confirmation';
+import {
+  EMAIL_JOBS_TABLE,
+  SUBMISSION_CONFIRMATION_TEMPLATE,
+} from './email-jobs.constants';
 
 @Injectable()
 export class DatabaseEmailJobsService extends EmailJobsService {
