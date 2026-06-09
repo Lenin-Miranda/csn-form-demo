@@ -6,6 +6,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { StudentsModule } from './students/students.module';
 import { IntakeModule } from './intake/intake.module';
+import { EmailJobsModule } from './email-jobs/email-jobs.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { IntakeModule } from './intake/intake.module';
     SubmissionsModule,
     StudentsModule,
     IntakeModule,
+    EmailJobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

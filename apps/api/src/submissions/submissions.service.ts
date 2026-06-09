@@ -10,6 +10,10 @@ import {
 } from './dto/submission.dto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { StudentsService } from '../students/students.service';
+import {
+  EmailJobsService,
+  EnqueueSubmissionConfirmationPayload,
+} from '../email-jobs/email-jobs.service';
 
 const DEFAULT_INTAKE_FORM_SLUG = 'student-intake';
 
@@ -39,6 +43,7 @@ export class SubmissionsService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly studentsService: StudentsService,
+    private readonly emailJobsService: EmailJobsService,
   ) {}
 
   async create(dto: CreateIntakeDto): Promise<SubmissionRow> {
@@ -75,6 +80,13 @@ export class SubmissionsService {
     }
 
     await this.createSubmissionAnswers(data.id, normalizedAnswers);
+    await this.enqueueSubmissionConfirmation({
+      submissionId: data.id,
+      formSlug: form.slug,
+      studentName: dto.name,
+      studentEmail: dto.email,
+      program: dto.program,
+    });
 
     this.logger.log(
       `Submission created with id: ${data.id} for form: ${form.slug}`,
@@ -91,7 +103,10 @@ export class SubmissionsService {
       .maybeSingle();
 
     if (error) {
-      this.logger.error(`Failed to look up intake form: ${slug}`, error.message);
+      this.logger.error(
+        `Failed to look up intake form: ${slug}`,
+        error.message,
+      );
       throw new InternalServerErrorException('Could not look up intake form');
     }
 
@@ -102,7 +117,9 @@ export class SubmissionsService {
     return data as IntakeFormRow;
   }
 
-  private async findQuestionsByFormId(formId: string): Promise<IntakeQuestionRow[]> {
+  private async findQuestionsByFormId(
+    formId: string,
+  ): Promise<IntakeQuestionRow[]> {
     const supabase = this.supabaseService.getClient();
     const { data, error } = await supabase
       .from('intake_questions')
@@ -137,35 +154,40 @@ export class SubmissionsService {
       answers.map((answer) => [answer.questionId, answer.value]),
     );
 
-    return questions.map((question) => {
-      const rawValue = submittedAnswers.get(question.id) ?? '';
+    return questions
+      .map((question) => {
+        const rawValue = submittedAnswers.get(question.id) ?? '';
 
-      if (question.is_required && !this.hasAnswerValue(question.type, rawValue)) {
-        throw new BadRequestException(
-          `Missing answer for field: ${question.field_key}`,
-        );
-      }
+        if (
+          question.is_required &&
+          !this.hasAnswerValue(question.type, rawValue)
+        ) {
+          throw new BadRequestException(
+            `Missing answer for field: ${question.field_key}`,
+          );
+        }
 
-      if (!this.hasAnswerValue(question.type, rawValue)) {
-        return null;
-      }
+        if (!this.hasAnswerValue(question.type, rawValue)) {
+          return null;
+        }
 
-      return {
-        questionId: question.id,
-        fieldKey: question.field_key,
-        questionType: question.type,
-        answer: this.parseAnswerValue(question.type, rawValue),
-      };
-    }).filter(
-      (
-        answer,
-      ): answer is {
-        questionId: string;
-        fieldKey: string;
-        questionType: string;
-        answer: boolean | number | string;
-      } => answer !== null,
-    );
+        return {
+          questionId: question.id,
+          fieldKey: question.field_key,
+          questionType: question.type,
+          answer: this.parseAnswerValue(question.type, rawValue),
+        };
+      })
+      .filter(
+        (
+          answer,
+        ): answer is {
+          questionId: string;
+          fieldKey: string;
+          questionType: string;
+          answer: boolean | number | string;
+        } => answer !== null,
+      );
   }
 
   private hasAnswerValue(type: string, value: string) {
@@ -224,5 +246,11 @@ export class SubmissionsService {
         'Could not save submission answers',
       );
     }
+  }
+
+  private async enqueueSubmissionConfirmation(
+    payload: EnqueueSubmissionConfirmationPayload,
+  ): Promise<void> {
+    await this.emailJobsService.enqueueSubmissionConfirmation(payload);
   }
 }
