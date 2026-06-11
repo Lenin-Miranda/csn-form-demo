@@ -59,11 +59,12 @@ describe('EmailJobsProcessorService', () => {
 
     supabaseService.getClient.mockReturnValue({ from });
 
-    await expect(service.processPending()).resolves.toBeUndefined();
+    await expect(service.processPending()).resolves.toBe(0);
     expect(mailService.sendSubmissionConfirmation).not.toHaveBeenCalled();
   });
 
   it('marks a pending job as sent when delivery succeeds', async () => {
+    mailService.sendSubmissionConfirmation.mockResolvedValue('provider-msg-1');
     const from = jest
       .fn()
       .mockReturnValueOnce(
@@ -87,7 +88,7 @@ describe('EmailJobsProcessorService', () => {
 
     supabaseService.getClient.mockReturnValue({ from });
 
-    await expect(service.processPending()).resolves.toBeUndefined();
+    await expect(service.processPending()).resolves.toBe(1);
     expect(mailService.sendSubmissionConfirmation).toHaveBeenCalledWith({
       to: job.recipient_email,
       studentName: job.payload.studentName,
@@ -96,6 +97,12 @@ describe('EmailJobsProcessorService', () => {
       submissionId: job.payload.submissionId,
       locale: undefined,
     });
+    expect(from.mock.results[2].value.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider_message_id: 'provider-msg-1',
+        status: 'sent',
+      }),
+    );
   });
 
   it('re-queues a job when delivery fails before max attempts', async () => {
@@ -124,7 +131,7 @@ describe('EmailJobsProcessorService', () => {
       new Error('provider timeout'),
     );
 
-    await expect(service.processPending()).resolves.toBeUndefined();
+    await expect(service.processPending()).resolves.toBe(1);
     expect(mailService.sendSubmissionConfirmation).toHaveBeenCalledTimes(1);
     expect(retryUpdate.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -164,7 +171,7 @@ describe('EmailJobsProcessorService', () => {
       new Error('provider timeout'),
     );
 
-    await expect(service.processPending()).resolves.toBeUndefined();
+    await expect(service.processPending()).resolves.toBe(1);
     expect(failureUpdate.update).toHaveBeenCalledWith(
       expect.objectContaining({
         attempts: 3,
@@ -186,6 +193,35 @@ describe('EmailJobsProcessorService', () => {
     await expect(service.processPending()).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );
+  });
+
+  it('processes a job by id', async () => {
+    mailService.sendSubmissionConfirmation.mockResolvedValue('provider-msg-2');
+    const from = jest
+      .fn()
+      .mockReturnValueOnce(
+        buildSingleJobQueryChain({
+          data: job,
+          error: null,
+        }),
+      )
+      .mockReturnValueOnce(
+        buildClaimJobChain({
+          data: { id: job.id },
+          error: null,
+        }),
+      )
+      .mockReturnValueOnce(
+        buildClaimJobChain({
+          data: { id: job.id },
+          error: null,
+        }),
+      );
+
+    supabaseService.getClient.mockReturnValue({ from });
+
+    await expect(service.processById(job.id)).resolves.toBeUndefined();
+    expect(mailService.sendSubmissionConfirmation).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -215,5 +251,18 @@ function buildClaimJobChain(result: {
 
   return {
     update,
+  };
+}
+
+function buildSingleJobQueryChain(result: {
+  data: unknown;
+  error: { message: string } | null;
+}) {
+  const maybeSingle = jest.fn().mockResolvedValue(result);
+  const eq = jest.fn().mockReturnValue({ maybeSingle });
+  const select = jest.fn().mockReturnValue({ eq });
+
+  return {
+    select,
   };
 }

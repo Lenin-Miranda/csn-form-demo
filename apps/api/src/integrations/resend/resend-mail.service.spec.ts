@@ -63,7 +63,7 @@ describe('ResendMailService', () => {
         submissionId: 'submission-1',
         locale: 'en',
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe('email_123');
 
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -74,6 +74,7 @@ describe('ResendMailService', () => {
         tags: expect.arrayContaining([
           { name: 'template', value: 'submission_confirmation' },
           { name: 'form_slug', value: 'student-intake' },
+          { name: 'submission_id', value: 'submission-1' },
           { name: 'locale', value: 'en' },
         ]),
       }),
@@ -99,19 +100,24 @@ describe('ResendMailService', () => {
       error: null,
     });
 
-    await service.sendSubmissionConfirmation({
-      to: 'student@example.com',
-      studentName: 'Jane Smith',
-      program: 'Programa intensivo de ingles',
-      formSlug: 'student-intake',
-      submissionId: 'submission-2',
-      locale: 'es',
-    });
+    await expect(
+      service.sendSubmissionConfirmation({
+        to: 'student@example.com',
+        studentName: 'Jane Smith',
+        program: 'Programa intensivo de ingles',
+        formSlug: 'student-intake',
+        submissionId: 'submission-2',
+        locale: 'es',
+      }),
+    ).resolves.toBe('email_456');
 
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({
         subject: 'Recibimos su formulario de admision de ingles',
-        tags: expect.arrayContaining([{ name: 'locale', value: 'es' }]),
+        tags: expect.arrayContaining([
+          { name: 'submission_id', value: 'submission-2' },
+          { name: 'locale', value: 'es' },
+        ]),
       }),
       {
         idempotencyKey: 'submission-confirmation:submission-2',
@@ -135,14 +141,16 @@ describe('ResendMailService', () => {
       error: null,
     });
 
-    await service.sendSubmissionConfirmation({
-      to: 'student@example.com',
-      studentName: 'Jane Smith',
-      program: 'Admissions',
-      formSlug: 'general-admissions',
-      submissionId: 'submission-3',
-      locale: 'en',
-    });
+    await expect(
+      service.sendSubmissionConfirmation({
+        to: 'student@example.com',
+        studentName: 'Jane Smith',
+        program: 'Admissions',
+        formSlug: 'general-admissions',
+        submissionId: 'submission-3',
+        locale: 'en',
+      }),
+    ).resolves.toBe('email_789');
 
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({

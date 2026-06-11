@@ -34,7 +34,7 @@ export class ResendMailService extends MailService {
 
   async sendSubmissionConfirmation(
     payload: SendSubmissionConfirmationPayload,
-  ): Promise<void> {
+  ): Promise<string> {
     const locale = payload.locale === 'es' ? 'es' : 'en';
     const template =
       locale === 'es'
@@ -84,6 +84,8 @@ export class ResendMailService extends MailService {
     this.logger.log(
       `Submission confirmation email sent for submission ${payload.submissionId} with Resend id ${data.id}`,
     );
+
+    return data.id;
   }
 
   private getClient(): Resend {

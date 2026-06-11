@@ -10,5 +10,5 @@ export interface SendSubmissionConfirmationPayload {
 export abstract class MailService {
   abstract sendSubmissionConfirmation(
     payload: SendSubmissionConfirmationPayload,
-  ): Promise<void>;
+  ): Promise<string>;
 }

@@ -7,7 +7,8 @@ export class NoopMailService extends MailService {
 
   async sendSubmissionConfirmation(
     payload: SendSubmissionConfirmationPayload,
-  ): Promise<void> {
+  ): Promise<string> {
     this.logger.log(`Submission confirmation email skipped for ${payload.to}`);
+    return `noop-${payload.submissionId}`;
   }
 }

@@ -17,7 +17,6 @@ import {
   SUBMISSION_CONFIRMATION_TEMPLATE,
 } from './email-jobs.constants';
 import { EnqueueSubmissionConfirmationPayload } from './email-jobs.service';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 interface EmailJobRow {
   id: string;
@@ -29,6 +28,7 @@ interface EmailJobRow {
   };
   attempts: number;
   status: string;
+  provider_message_id?: string | null;
 }
 
 @Injectable()
@@ -42,7 +42,7 @@ export class EmailJobsProcessorService {
 
   async processPending(
     limit = DEFAULT_EMAIL_JOB_BATCH_SIZE,
-  ): Promise<void | number> {
+  ): Promise<number> {
     const batchSize =
       Number.isInteger(limit) && limit > 0
         ? limit
@@ -52,7 +52,7 @@ export class EmailJobsProcessorService {
 
     if (jobs.length === 0) {
       this.logger.log('No pending email jobs found');
-      return;
+      return 0;
     }
 
     for (const job of jobs) {
@@ -103,8 +103,10 @@ export class EmailJobsProcessorService {
       return;
     }
 
+    let providerMessageId = '';
+
     try {
-      await this.deliverJob(job);
+      providerMessageId = await this.deliverJob(job);
     } catch (error) {
       const errorMessage = this.getErrorMessage(error);
 
@@ -118,7 +120,7 @@ export class EmailJobsProcessorService {
     }
 
     try {
-      await this.markAsSent(job.id);
+      await this.markAsSent(job.id, providerMessageId);
       this.logger.log(`Email job ${job.id} marked as sent`);
     } catch (error) {
       this.logger.error(
@@ -176,10 +178,10 @@ export class EmailJobsProcessorService {
     return Boolean(data);
   }
 
-  private async deliverJob(job: EmailJobRow): Promise<void> {
+  private async deliverJob(job: EmailJobRow): Promise<string> {
     switch (job.template) {
       case SUBMISSION_CONFIRMATION_TEMPLATE:
-        await this.mailService.sendSubmissionConfirmation({
+        return this.mailService.sendSubmissionConfirmation({
           to: job.recipient_email,
           studentName: this.requireString(
             job.payload.studentName,
@@ -193,13 +195,15 @@ export class EmailJobsProcessorService {
           ),
           locale: job.payload.locale,
         });
-        return;
       default:
         throw new Error(`Unsupported email template: ${job.template}`);
     }
   }
 
-  private async markAsSent(jobId: string): Promise<void> {
+  private async markAsSent(
+    jobId: string,
+    providerMessageId: string,
+  ): Promise<void> {
     const supabase = this.supabaseService.getClient();
     const { data, error } = await supabase
       .from(EMAIL_JOBS_TABLE)
@@ -207,6 +211,7 @@ export class EmailJobsProcessorService {
         status: EMAIL_JOB_STATUS_SENT,
         sent_at: new Date().toISOString(),
         last_error: null,
+        provider_message_id: providerMessageId,
       })
       .eq('id', jobId)
       .eq('status', EMAIL_JOB_STATUS_PROCESSING)
