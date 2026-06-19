@@ -86,6 +86,7 @@ export default function IntakeForm({ locale }: { locale: Locale }) {
           </div>
         ) : (
           <FormStep
+            key={current.questionId}
             stepNumber={step + 1}
             locale={locale}
             question={localizedCurrent?.label ?? current.label}

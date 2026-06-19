@@ -4,7 +4,8 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useCallback,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -19,6 +20,32 @@ interface LanguageContextValue {
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
+const LOCALE_CHANGE_EVENT = "csn-intake-locale-change";
+
+function readBrowserLocale(initialLocale: Locale): Locale {
+  if (typeof window === "undefined") {
+    return initialLocale;
+  }
+
+  const storedLocale = window.localStorage.getItem(LOCALE_COOKIE_NAME);
+  return storedLocale
+    ? resolveLocale(storedLocale)
+    : resolveLocale(window.navigator.language);
+}
+
+function subscribeToLocaleChanges(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(LOCALE_CHANGE_EVENT, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(LOCALE_CHANGE_EVENT, onStoreChange);
+  };
+}
 
 export function LanguageProvider({
   children,
@@ -27,23 +54,14 @@ export function LanguageProvider({
   children: ReactNode;
   initialLocale: Locale;
 }) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
-  const [hasHydratedPreference, setHasHydratedPreference] = useState(false);
+  const locale = useSyncExternalStore(
+    subscribeToLocaleChanges,
+    () => readBrowserLocale(initialLocale),
+    () => initialLocale,
+  );
 
   useEffect(() => {
-    const storedLocale = window.localStorage.getItem(LOCALE_COOKIE_NAME);
-    const preferredLocale = storedLocale
-      ? resolveLocale(storedLocale)
-      : resolveLocale(window.navigator.language);
-
-    setLocale((currentLocale) =>
-      currentLocale === preferredLocale ? currentLocale : preferredLocale,
-    );
-    setHasHydratedPreference(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydratedPreference) {
+    if (typeof window === "undefined") {
       return;
     }
 
@@ -51,7 +69,12 @@ export function LanguageProvider({
     document.documentElement.dataset.locale = locale;
     document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; samesite=lax`;
     window.localStorage.setItem(LOCALE_COOKIE_NAME, locale);
-  }, [hasHydratedPreference, locale]);
+  }, [locale]);
+
+  const setLocale = useCallback((nextLocale: Locale) => {
+    window.localStorage.setItem(LOCALE_COOKIE_NAME, nextLocale);
+    window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT));
+  }, []);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale }}>

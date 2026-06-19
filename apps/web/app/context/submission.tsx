@@ -1,7 +1,14 @@
 "use client";
 
 import { AxiosError } from "axios";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { fetchIntake, type IntakeFormResponse, type IntakeQuestion } from "../api/intake";
 import { createSubmission } from "../api/submissions";
 import {
@@ -98,12 +105,17 @@ export function SubmissionProvider({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = getUiCopy(locale);
+  const localeRef = useRef(locale);
 
   const steps = form?.questions ?? [];
   const current = steps[step] ?? null;
   const canGoBack = step > 0;
   const canAdvance = hasAnswerValue(current, current ? values[current.fieldKey] ?? "" : "");
   const canSkip = Boolean(current && !current.isRequired);
+
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
 
   useEffect(() => {
     let isMounted = true;
@@ -128,7 +140,7 @@ export function SubmissionProvider({
           return;
         }
 
-        setError(getErrorMessage(loadError, locale));
+        setError(getErrorMessage(loadError, localeRef.current));
       } finally {
         if (isMounted) {
           setIsLoading(false);

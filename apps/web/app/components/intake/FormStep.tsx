@@ -137,14 +137,6 @@ export default function FormStep({
     return () => window.clearTimeout(timer)
   }, [question, type])
 
-  useEffect(() => {
-    if (type !== 'date') {
-      return
-    }
-
-    setDateDisplayValue(formatDateDisplayValue(value))
-  }, [fieldKey, question, type])
-
   const handleEnter = () => {
     if (canContinue && !isSubmitting) {
       void onNext()
