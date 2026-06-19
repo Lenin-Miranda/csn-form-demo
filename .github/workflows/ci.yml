@@ -23,13 +23,16 @@ jobs:
           cache-dependency-path: apps/api/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefix apps/api
+        working-directory: apps/api
+        run: npm ci
 
       - name: Run tests
-        run: npm test --prefix apps/api -- --runInBand
+        working-directory: apps/api
+        run: npm test -- --runInBand
 
       - name: Build API
-        run: npm run build --prefix apps/api
+        working-directory: apps/api
+        run: npm run build
 
   web:
     name: Web
@@ -51,10 +54,13 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefix apps/web
+        working-directory: apps/web
+        run: npm ci
 
       - name: Lint
-        run: npm run lint --prefix apps/web
+        working-directory: apps/web
+        run: npm run lint
 
       - name: Build web app
-        run: npm run build --prefix apps/web
+        working-directory: apps/web
+        run: npm run build
