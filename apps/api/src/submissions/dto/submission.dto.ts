@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -26,6 +27,11 @@ export class CreateSubmissionAnswerDto {
 }
 
 export class CreateIntakeDto {
+  @Transform(trimString)
+  @IsOptional()
+  @IsIn(['en', 'es'])
+  locale?: 'en' | 'es';
+
   @Transform(trimString)
   @IsOptional()
   @IsString()

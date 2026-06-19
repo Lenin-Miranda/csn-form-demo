@@ -10,6 +10,7 @@ export interface CreateSubmissionAnswerPayload {
 
 export interface CreateSubmissionPayload {
   formSlug?: string
+  locale?: 'en' | 'es'
   name: string
   email: string
   phone: string
