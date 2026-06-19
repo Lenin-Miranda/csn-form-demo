@@ -189,6 +189,7 @@ export function SubmissionProvider({
 
       await createSubmission({
         formSlug: form.slug,
+        locale,
         name: values.name.trim(),
         email: values.email.trim(),
         phone: values.phone.trim(),

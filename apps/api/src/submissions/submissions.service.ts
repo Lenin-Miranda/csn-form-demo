@@ -9,11 +9,6 @@ import {
   CreateSubmissionAnswerDto,
 } from './dto/submission.dto';
 import { SupabaseService } from '../supabase/supabase.service';
-import { StudentsService } from '../students/students.service';
-import {
-  EmailJobsService,
-  EnqueueSubmissionConfirmationPayload,
-} from '../email-jobs/email-jobs.service';
 
 const DEFAULT_INTAKE_FORM_SLUG = 'student-intake';
 
@@ -36,15 +31,18 @@ interface IntakeQuestionRow {
   is_required: boolean;
 }
 
+type NormalizedSubmissionAnswer = {
+  questionId: string;
+  fieldKey: string;
+  questionType: string;
+  answer: boolean | number | string;
+};
+
 @Injectable()
 export class SubmissionsService {
   private readonly logger = new Logger(SubmissionsService.name);
 
-  constructor(
-    private readonly supabaseService: SupabaseService,
-    private readonly studentsService: StudentsService,
-    private readonly emailJobsService: EmailJobsService,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async create(dto: CreateIntakeDto): Promise<SubmissionRow> {
     const supabase = this.supabaseService.getClient();
@@ -54,44 +52,34 @@ export class SubmissionsService {
     const questions = await this.findQuestionsByFormId(form.id);
     const normalizedAnswers = this.normalizeAnswers(dto.answers, questions);
 
-    const student = await this.studentsService.findOrCreate({
-      name: dto.name,
-      email: dto.email,
-      phone: dto.phone,
-    });
-
     const { data, error } = await supabase
-      .from('submissions')
-      .insert({
-        student_id: student.id,
-        program: dto.program,
+      .rpc('create_intake_submission', {
+        p_form_slug: form.slug,
+        p_name: dto.name,
+        p_email: dto.email,
+        p_phone: dto.phone,
+        p_program: dto.program,
+        p_answers: normalizedAnswers,
+        p_locale: dto.locale ?? 'en',
       })
-      .select()
       .single();
 
     if (error) {
-      this.logger.error('Failed to create submission', error.message);
+      this.logger.error('Failed to create intake submission', error.message);
       throw new InternalServerErrorException('Could not create submission');
     }
 
     if (!data) {
-      this.logger.error('Supabase returned no submission after insert');
+      this.logger.error('Supabase returned no submission after RPC');
       throw new InternalServerErrorException('Could not create submission');
     }
 
-    await this.createSubmissionAnswers(data.id, normalizedAnswers);
-    await this.enqueueSubmissionConfirmation({
-      submissionId: data.id,
-      formSlug: form.slug,
-      studentName: dto.name,
-      studentEmail: dto.email,
-      program: dto.program,
-    });
+    const submission = data as SubmissionRow;
 
     this.logger.log(
-      `Submission created with id: ${data.id} for form: ${form.slug}`,
+      `Submission created with id: ${submission.id} for form: ${form.slug}`,
     );
-    return data;
+    return submission;
   }
 
   private async findFormBySlug(slug: string): Promise<IntakeFormRow> {
@@ -138,7 +126,7 @@ export class SubmissionsService {
   private normalizeAnswers(
     answers: CreateSubmissionAnswerDto[],
     questions: IntakeQuestionRow[],
-  ) {
+  ): NormalizedSubmissionAnswer[] {
     const questionIds = new Set(questions.map((question) => question.id));
     const unknownAnswer = answers.find(
       (answer) => !questionIds.has(answer.questionId),
@@ -179,14 +167,7 @@ export class SubmissionsService {
         };
       })
       .filter(
-        (
-          answer,
-        ): answer is {
-          questionId: string;
-          fieldKey: string;
-          questionType: string;
-          answer: boolean | number | string;
-        } => answer !== null,
+        (answer): answer is NormalizedSubmissionAnswer => answer !== null,
       );
   }
 
@@ -214,43 +195,5 @@ export class SubmissionsService {
       default:
         return value;
     }
-  }
-
-  private async createSubmissionAnswers(
-    submissionId: string,
-    answers: Array<{
-      questionId: string;
-      fieldKey: string;
-      questionType: string;
-      answer: boolean | number | string;
-    }>,
-  ) {
-    if (answers.length === 0) {
-      return;
-    }
-
-    const supabase = this.supabaseService.getClient();
-    const { error } = await supabase.from('submission_answers').insert(
-      answers.map((answer) => ({
-        submission_id: submissionId,
-        question_id: answer.questionId,
-        field_key: answer.fieldKey,
-        question_type: answer.questionType,
-        answer: answer.answer,
-      })),
-    );
-
-    if (error) {
-      this.logger.error('Failed to create submission answers', error.message);
-      throw new InternalServerErrorException(
-        'Could not save submission answers',
-      );
-    }
-  }
-
-  private async enqueueSubmissionConfirmation(
-    payload: EnqueueSubmissionConfirmationPayload,
-  ): Promise<void> {
-    await this.emailJobsService.enqueueSubmissionConfirmation(payload);
   }
 }

@@ -4,6 +4,7 @@ export interface EnqueueSubmissionConfirmationPayload {
   studentName: string;
   studentEmail: string;
   program: string;
+  locale?: 'en' | 'es';
 }
 
 export abstract class EmailJobsService {
