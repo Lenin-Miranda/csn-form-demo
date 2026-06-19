@@ -1,275 +1,212 @@
 # CSN Intake Demo
 
-Demo app for a better College of Southern Nevada intake flow.
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg)
+![Next.js](https://img.shields.io/badge/web-Next.js%2016-black.svg)
+![NestJS](https://img.shields.io/badge/api-NestJS%2011-e0234e.svg)
+![Supabase](https://img.shields.io/badge/database-Supabase-3ecf8e.svg)
+![TypeScript](https://img.shields.io/badge/language-TypeScript-3178c6.svg)
 
-This repo currently has:
+Bilingual English Language intake demo for the College of Southern Nevada. The app gives prospective students a guided one-question-at-a-time intake flow, stores submissions in Supabase, and queues confirmation emails through a NestJS backend.
 
-- `apps/web`: Next.js frontend
-- `apps/api`: NestJS backend
-- `supabase/`: local Supabase project, migrations, and seed files
+## Highlights
 
-The current data model is relational:
+- Student-facing intake experience built with Next.js App Router.
+- NestJS API with DTO validation, CORS configuration, and service boundaries.
+- Supabase migrations and seed data for local development.
+- Dynamic intake forms and questions backed by relational tables.
+- Submission answers stored separately from student records.
+- Email job queue with retry/failure states and a no-op mail provider for local development.
+- English and Spanish UI copy.
 
-- `students`
-- `submissions`
-- `submissions.student_id -> students.id`
+## Stack
 
-## Prerequisites
+| Area | Technology |
+| --- | --- |
+| Web | Next.js 16, React 19, Tailwind CSS 4 |
+| API | NestJS 11, class-validator, scheduled jobs |
+| Database | Supabase local stack, PostgreSQL migrations |
+| Tooling | TypeScript, ESLint, Jest, GitHub Actions |
 
-- Node.js 20+
-- npm
-- Docker Desktop running
-
-Supabase CLI is not required globally because we run it through `npx`.
-
-## Project Structure
+## Repository Structure
 
 ```text
 .
 ├── apps
-│   ├── api
-│   └── web
-└── supabase
+│   ├── api          # NestJS backend
+│   └── web          # Next.js frontend
+├── supabase         # Local Supabase config, migrations, and seed data
+├── .github          # CI workflow
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
+└── SECURITY.md
 ```
 
-## First-Time Setup
+## Prerequisites
 
-Install dependencies for each app:
+- Node.js 20 or newer
+- npm
+- Docker Desktop
+
+The Supabase CLI does not need to be installed globally. Commands in this repo use `npx supabase`.
+
+## Quick Start
+
+Install dependencies:
 
 ```bash
-cd apps/api
-npm install
-
-cd ../web
-npm install
+npm install --prefix apps/api
+npm install --prefix apps/web
 ```
 
-Then go back to the repo root:
-
-```bash
-cd ../..
-```
-
-## Environment Variables
-
-### Backend
-
-Copy the backend env template:
+Copy the environment templates:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-Set these values in `apps/api/.env`:
+Start Supabase from the repository root:
+
+```bash
+npx supabase start
+```
+
+Copy the local publishable and secret keys from:
+
+```bash
+npx supabase status
+```
+
+Then start the API and web app in separate terminals:
+
+```bash
+npm run api:dev
+npm run web:dev
+```
+
+Local services:
+
+| Service | URL |
+| --- | --- |
+| Web app | `http://localhost:3000` |
+| API | `http://localhost:3001` |
+| Supabase API | `http://127.0.0.1:54321` |
+| Supabase Studio | `http://127.0.0.1:54323` |
+| Local Postgres | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
+
+## Environment Variables
+
+Backend template: `apps/api/.env.example`
 
 ```env
 PORT=3001
+FRONTEND_URL=http://localhost:3000
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_SECRET_KEY=your-local-secret-key
 ```
 
-### Frontend
-
-Copy the frontend env template:
-
-```bash
-cp apps/web/.env.example apps/web/.env.local
-```
-
-Set these values in `apps/web/.env.local`:
+Frontend template: `apps/web/.env.example`
 
 ```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-local-publishable-key
 ```
 
-You get the local publishable and secret keys from:
-
-```bash
-npx supabase status
-```
-
-## Running Everything Locally
-
-Use 3 terminals.
-
-### Terminal 1: Supabase
-
-From the repo root:
-
-```bash
-npx supabase start
-```
-
-Important local services:
-
-- Supabase API: `http://127.0.0.1:54321`
-- Supabase Studio: `http://127.0.0.1:54323`
-- Local Postgres: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
-
-If you need the current local keys again:
-
-```bash
-npx supabase status
-```
-
-### Terminal 2: Backend
-
-```bash
-cd apps/api
-npm run dev
-```
-
-Backend runs on:
-
-- `http://localhost:3001` if `PORT=3001` is present in `apps/api/.env`
-- otherwise it falls back to `http://localhost:8090`
-
-### Terminal 3: Frontend
-
-```bash
-cd apps/web
-npm run dev
-```
-
-Frontend runs on:
-
-- `http://localhost:3000`
+Do not commit real `.env` files. Only `.env.example` files should be tracked.
 
 ## Useful Commands
 
-### Supabase
+Run from the repository root:
 
-Start local stack:
+```bash
+npm run api:dev
+npm run web:dev
+npm run api:test
+npm run api:build
+npm run web:lint
+npm run web:build
+npm run verify
+```
+
+Supabase commands:
 
 ```bash
 npx supabase start
-```
-
-Show URLs and keys:
-
-```bash
 npx supabase status
-```
-
-Stop local stack:
-
-```bash
-npx supabase stop
-```
-
-Reset local DB and re-run all migrations:
-
-```bash
 npx supabase db reset
-```
-
-Create a new migration:
-
-```bash
+npx supabase stop
 npx supabase migration new your_migration_name
 ```
 
-### Backend
+## API Overview
 
-```bash
-cd apps/api
-npm run dev
-npm run build
-npm test
-```
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/intake` | Load the default intake form and questions. |
+| `GET` | `/intake/:formSlug/questions` | Load a specific form by slug. |
+| `POST` | `/submissions` | Create a student submission and queue confirmation email. |
+| `POST` | `/students` | Create a student directly. |
+| `POST` | `/intake/questions` | Create an intake question. Intended for admin workflows. |
 
-### Frontend
-
-```bash
-cd apps/web
-npm run dev
-npm run build
-npm run lint
-```
-
-## Current Backend Endpoints
-
-### `POST /students`
-
-Creates a student.
-
-Example body:
+Example submission payload:
 
 ```json
 {
-  "name": "Lenin Miranda",
-  "email": "lenin@example.com",
-  "phone": "(702) 555-1234"
-}
-```
-
-### `POST /submissions`
-
-Current intake endpoint.
-
-This endpoint accepts the full intake payload, finds or creates a student, then creates a related submission.
-
-Example body:
-
-```json
-{
-  "name": "Lenin Miranda",
-  "email": "lenin@example.com",
+  "formSlug": "student-intake",
+  "name": "Jane Smith",
+  "email": "jane@example.com",
   "phone": "(702) 555-1234",
-  "program": "Computer Science"
+  "program": "Intensive English Program",
+  "answers": [
+    {
+      "questionId": "00000000-0000-0000-0000-000000000000",
+      "value": "Jane Smith"
+    }
+  ]
 }
 ```
 
-## Validation
+## Database Model
 
-NestJS global `ValidationPipe` is enabled in `apps/api/src/main.ts`.
-
-That means:
-
-- unexpected fields are rejected
-- DTO validation runs automatically
-- invalid payloads return `400 Bad Request`
-
-## Database Notes
-
-Current migrations live in `supabase/migrations`.
-
-The current schema is:
+The current schema is relational:
 
 - `students`
-  - `id`
-  - `name`
-  - `email`
-  - `phone`
-  - `created_at`
-
 - `submissions`
-  - `id`
-  - `student_id`
-  - `program`
-  - `created_at`
+- `intake_forms`
+- `intake_questions`
+- `submission_answers`
+- `email_jobs`
 
-RLS is enabled on both tables.
+The intended data flow is:
 
-Right now the intended flow is:
+1. The frontend calls the NestJS backend.
+2. The backend validates the request.
+3. The backend writes to Supabase using `SUPABASE_SECRET_KEY`.
+4. The backend queues a confirmation email in `email_jobs`.
 
-- frontend calls backend
-- backend uses `SUPABASE_SECRET_KEY`
-- frontend does not write directly to the tables
+Row Level Security is enabled on the Supabase tables. Direct frontend writes are intentionally avoided.
 
-## Production Notes
+## Quality Checks
 
-For production:
+GitHub Actions runs API tests/build and web lint/build on pushes to `main` and pull requests.
 
-- use a hosted Supabase project
-- replace local env values with production values
-- keep `SUPABASE_SECRET_KEY` only in the backend
-- never expose the secret key in the frontend
-
-When pushing schema changes to a hosted Supabase project:
+Before opening a pull request, run:
 
 ```bash
-npx supabase link --project-ref your-project-ref
-npx supabase db push
+npm run verify
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and pull request guidelines.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for responsible disclosure and sensitive data guidance.
+
+## License
+
+Released under the [MIT License](LICENSE).

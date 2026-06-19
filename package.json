@@ -1,0 +1,23 @@
+{
+  "name": "csn-intake-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bilingual CSN English Language intake demo built with Next.js, NestJS, and Supabase.",
+  "license": "MIT",
+  "scripts": {
+    "api:dev": "npm run dev --prefix apps/api",
+    "api:build": "npm run build --prefix apps/api",
+    "api:test": "npm test --prefix apps/api",
+    "web:dev": "npm run dev --prefix apps/web",
+    "web:build": "npm run build --prefix apps/web",
+    "web:lint": "npm run lint --prefix apps/web",
+    "build": "npm run api:build && npm run web:build",
+    "lint": "npm run web:lint",
+    "test": "npm run api:test",
+    "verify": "npm run lint && npm run test && npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+
