@@ -4,6 +4,7 @@ import { DatabaseEmailJobsService } from './database-email.jobs.service';
 import { MailModule } from '../mail/mail.module';
 import { EmailJobsProcessorService } from './email-jobs-processor.service';
 import { EmailJobsRunnerService } from './email-jobs-runner.service';
+import { EmailJobsController } from './email-jobs.controller';
 
 @Module({
   imports: [MailModule],
@@ -16,5 +17,6 @@ import { EmailJobsRunnerService } from './email-jobs-runner.service';
     EmailJobsRunnerService,
   ],
   exports: [EmailJobsService, EmailJobsProcessorService],
+  controllers: [EmailJobsController],
 })
 export class EmailJobsModule {}

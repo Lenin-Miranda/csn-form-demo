@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -27,6 +28,7 @@ interface EmailJobRow {
   };
   attempts: number;
   status: string;
+  provider_message_id?: string | null;
 }
 
 @Injectable()
@@ -38,21 +40,28 @@ export class EmailJobsProcessorService {
     private readonly mailService: MailService,
   ) {}
 
-  async processPending(limit = DEFAULT_EMAIL_JOB_BATCH_SIZE): Promise<void> {
+  async processPending(
+    limit = DEFAULT_EMAIL_JOB_BATCH_SIZE,
+  ): Promise<number> {
     const batchSize =
       Number.isInteger(limit) && limit > 0
         ? limit
         : DEFAULT_EMAIL_JOB_BATCH_SIZE;
     const jobs = await this.fetchPendingJobs(batchSize);
+    let processed = 0;
 
     if (jobs.length === 0) {
       this.logger.log('No pending email jobs found');
-      return;
+      return 0;
     }
 
     for (const job of jobs) {
       await this.processJob(job);
+      processed += 1;
     }
+
+    this.logger.log(`Processed jobs ${processed}`);
+    return processed;
   }
 
   private async fetchPendingJobs(limit: number): Promise<EmailJobRow[]> {
@@ -68,7 +77,9 @@ export class EmailJobsProcessorService {
 
     if (error) {
       this.logger.error('Failed to load pending email jobs', error.message);
-      throw new InternalServerErrorException('Could not load pending email jobs');
+      throw new InternalServerErrorException(
+        'Could not load pending email jobs',
+      );
     }
 
     return (data ?? []) as EmailJobRow[];
@@ -92,8 +103,10 @@ export class EmailJobsProcessorService {
       return;
     }
 
+    let providerMessageId = '';
+
     try {
-      await this.deliverJob(job);
+      providerMessageId = await this.deliverJob(job);
     } catch (error) {
       const errorMessage = this.getErrorMessage(error);
 
@@ -107,7 +120,7 @@ export class EmailJobsProcessorService {
     }
 
     try {
-      await this.markAsSent(job.id);
+      await this.markAsSent(job.id, providerMessageId);
       this.logger.log(`Email job ${job.id} marked as sent`);
     } catch (error) {
       this.logger.error(
@@ -115,6 +128,36 @@ export class EmailJobsProcessorService {
         error instanceof Error ? error.stack : undefined,
       );
     }
+  }
+
+  private async findJobById(id: string): Promise<EmailJobRow | null> {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from(EMAIL_JOBS_TABLE)
+      .select(
+        'id, submission_id, template, recipient_email, payload, attempts, status',
+      )
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(`Failed to load email job ${id}`, error.message);
+      throw new InternalServerErrorException('Could not load email job');
+    }
+
+    this.logger.log(`Job found for id: ${id}`);
+    return (data as EmailJobRow | null) ?? null;
+  }
+
+  async processById(id: string): Promise<void> {
+    const job = await this.findJobById(id);
+
+    if (!job) {
+      throw new NotFoundException(`Email job not found ${id}`);
+    }
+
+    await this.processJob(job);
   }
 
   private async markAsProcessing(jobId: string): Promise<boolean> {
@@ -135,12 +178,15 @@ export class EmailJobsProcessorService {
     return Boolean(data);
   }
 
-  private async deliverJob(job: EmailJobRow): Promise<void> {
+  private async deliverJob(job: EmailJobRow): Promise<string> {
     switch (job.template) {
       case SUBMISSION_CONFIRMATION_TEMPLATE:
-        await this.mailService.sendSubmissionConfirmation({
+        return this.mailService.sendSubmissionConfirmation({
           to: job.recipient_email,
-          studentName: this.requireString(job.payload.studentName, 'studentName'),
+          studentName: this.requireString(
+            job.payload.studentName,
+            'studentName',
+          ),
           program: this.requireString(job.payload.program, 'program'),
           formSlug: this.requireString(job.payload.formSlug, 'formSlug'),
           submissionId: this.requireString(
@@ -149,13 +195,15 @@ export class EmailJobsProcessorService {
           ),
           locale: job.payload.locale,
         });
-        return;
       default:
         throw new Error(`Unsupported email template: ${job.template}`);
     }
   }
 
-  private async markAsSent(jobId: string): Promise<void> {
+  private async markAsSent(
+    jobId: string,
+    providerMessageId: string,
+  ): Promise<void> {
     const supabase = this.supabaseService.getClient();
     const { data, error } = await supabase
       .from(EMAIL_JOBS_TABLE)
@@ -163,6 +211,7 @@ export class EmailJobsProcessorService {
         status: EMAIL_JOB_STATUS_SENT,
         sent_at: new Date().toISOString(),
         last_error: null,
+        provider_message_id: providerMessageId,
       })
       .eq('id', jobId)
       .eq('status', EMAIL_JOB_STATUS_PROCESSING)
@@ -174,7 +223,9 @@ export class EmailJobsProcessorService {
         `Email job ${jobId} was delivered but could not be marked as sent`,
         error?.message,
       );
-      throw new InternalServerErrorException('Could not mark email job as sent');
+      throw new InternalServerErrorException(
+        'Could not mark email job as sent',
+      );
     }
   }
 
