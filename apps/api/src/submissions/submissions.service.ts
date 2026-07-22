@@ -86,6 +86,7 @@ export class SubmissionsService {
       studentName: dto.name,
       studentEmail: dto.email,
       program: dto.program,
+      locale: dto.locale,
     });
 
     this.logger.log(

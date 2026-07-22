@@ -47,6 +47,7 @@ describe('SubmissionsService', () => {
     email: 'jane@example.com',
     phone: '5551234567',
     program: 'Intensive English Program',
+    locale: 'es',
     answers: [
       { questionId: 'q-name', value: 'Jane Smith' },
       { questionId: 'q-email', value: 'jane@example.com' },
@@ -147,6 +148,7 @@ describe('SubmissionsService', () => {
       studentName: dto.name,
       studentEmail: dto.email,
       program: dto.program,
+      locale: dto.locale,
     });
     expect(submissionAnswersInsert).toHaveBeenCalledWith([
       {

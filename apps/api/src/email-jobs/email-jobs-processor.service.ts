@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -16,6 +17,7 @@ import {
   SUBMISSION_CONFIRMATION_TEMPLATE,
 } from './email-jobs.constants';
 import { EnqueueSubmissionConfirmationPayload } from './email-jobs.service';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 interface EmailJobRow {
   id: string;
@@ -38,12 +40,15 @@ export class EmailJobsProcessorService {
     private readonly mailService: MailService,
   ) {}
 
-  async processPending(limit = DEFAULT_EMAIL_JOB_BATCH_SIZE): Promise<void> {
+  async processPending(
+    limit = DEFAULT_EMAIL_JOB_BATCH_SIZE,
+  ): Promise<void | number> {
     const batchSize =
       Number.isInteger(limit) && limit > 0
         ? limit
         : DEFAULT_EMAIL_JOB_BATCH_SIZE;
     const jobs = await this.fetchPendingJobs(batchSize);
+    let processed = 0;
 
     if (jobs.length === 0) {
       this.logger.log('No pending email jobs found');
@@ -52,7 +57,11 @@ export class EmailJobsProcessorService {
 
     for (const job of jobs) {
       await this.processJob(job);
+      processed += 1;
     }
+
+    this.logger.log(`Processed jobs ${processed}`);
+    return processed;
   }
 
   private async fetchPendingJobs(limit: number): Promise<EmailJobRow[]> {
@@ -68,7 +77,9 @@ export class EmailJobsProcessorService {
 
     if (error) {
       this.logger.error('Failed to load pending email jobs', error.message);
-      throw new InternalServerErrorException('Could not load pending email jobs');
+      throw new InternalServerErrorException(
+        'Could not load pending email jobs',
+      );
     }
 
     return (data ?? []) as EmailJobRow[];
@@ -117,6 +128,36 @@ export class EmailJobsProcessorService {
     }
   }
 
+  private async findJobById(id: string): Promise<EmailJobRow | null> {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from(EMAIL_JOBS_TABLE)
+      .select(
+        'id, submission_id, template, recipient_email, payload, attempts, status',
+      )
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(`Failed to load email job ${id}`, error.message);
+      throw new InternalServerErrorException('Could not load email job');
+    }
+
+    this.logger.log(`Job found for id: ${id}`);
+    return (data as EmailJobRow | null) ?? null;
+  }
+
+  async processById(id: string): Promise<void> {
+    const job = await this.findJobById(id);
+
+    if (!job) {
+      throw new NotFoundException(`Email job not found ${id}`);
+    }
+
+    await this.processJob(job);
+  }
+
   private async markAsProcessing(jobId: string): Promise<boolean> {
     const supabase = this.supabaseService.getClient();
     const { data, error } = await supabase
@@ -140,7 +181,10 @@ export class EmailJobsProcessorService {
       case SUBMISSION_CONFIRMATION_TEMPLATE:
         await this.mailService.sendSubmissionConfirmation({
           to: job.recipient_email,
-          studentName: this.requireString(job.payload.studentName, 'studentName'),
+          studentName: this.requireString(
+            job.payload.studentName,
+            'studentName',
+          ),
           program: this.requireString(job.payload.program, 'program'),
           formSlug: this.requireString(job.payload.formSlug, 'formSlug'),
           submissionId: this.requireString(
@@ -174,7 +218,9 @@ export class EmailJobsProcessorService {
         `Email job ${jobId} was delivered but could not be marked as sent`,
         error?.message,
       );
-      throw new InternalServerErrorException('Could not mark email job as sent');
+      throw new InternalServerErrorException(
+        'Could not mark email job as sent',
+      );
     }
   }
 

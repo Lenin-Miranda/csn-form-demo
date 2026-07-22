@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -59,6 +60,10 @@ export class CreateIntakeDto {
   @IsNotEmpty()
   @MaxLength(120)
   program!: string;
+
+  @IsOptional()
+  @IsIn(['en', 'es'])
+  locale?: 'en' | 'es';
 
   @IsArray()
   @ArrayMinSize(1)
