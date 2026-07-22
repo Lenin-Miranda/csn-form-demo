@@ -193,6 +193,7 @@ export function SubmissionProvider({
         email: values.email.trim(),
         phone: values.phone.trim(),
         program: values.program.trim(),
+        locale,
         answers: steps.map((question) => ({
           questionId: question.questionId,
           value: (values[question.fieldKey] ?? "").trim(),

@@ -14,6 +14,7 @@ export interface CreateSubmissionPayload {
   email: string
   phone: string
   program: string
+  locale?: 'en' | 'es'
   answers: CreateSubmissionAnswerPayload[]
 }
 
